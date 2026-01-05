@@ -1,4 +1,3 @@
-/* RESET */
 * {
     margin: 0;
     padding: 0;
@@ -10,29 +9,30 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: #f5f7fa;
     color: #333;
-    line-height: 1.4;
+    line-height: 1.5;
 }
 
 .app {
     max-width: 100%;
     min-height: 100vh;
     background: #fff;
+    padding-bottom: 30px;
 }
 
-/* HEADER */
+/* ШАПКА */
 .header {
     background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
     color: white;
-    padding: 20px 16px;
-    border-radius: 0 0 20px 20px;
-    box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+    padding: 20px;
+    border-radius: 0 0 25px 25px;
+    box-shadow: 0 4px 20px rgba(67, 97, 238, 0.3);
 }
 
 .header-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
 }
 
 .header h1 {
@@ -40,22 +40,31 @@ body {
     font-weight: 700;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
 .user-info {
-    font-size: 32px;
-    color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.user-info i {
+    font-size: 24px;
 }
 
 .balance-card {
     text-align: center;
+    padding: 10px 0;
 }
 
 .balance-label {
-    font-size: 14px;
+    font-size: 15px;
     opacity: 0.9;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    font-weight: 500;
 }
 
 .balance-amount {
@@ -67,46 +76,50 @@ body {
 
 .period-tabs {
     display: inline-flex;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 4px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 15px;
+    padding: 5px;
+    gap: 5px;
 }
 
 .period-tab {
-    padding: 8px 20px;
+    padding: 10px 24px;
     border: none;
     background: transparent;
     color: rgba(255, 255, 255, 0.8);
     font-weight: 600;
-    border-radius: 8px;
+    border-radius: 12px;
     cursor: pointer;
     transition: all 0.2s;
+    font-size: 15px;
 }
 
 .period-tab.active {
     background: white;
     color: #4361ee;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
-/* QUICK MENU */
+/* БЫСТРЫЕ КНОПКИ */
 .quick-menu {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    padding: 20px 16px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 20px;
     background: white;
-    border-bottom: 1px solid #eaeaea;
+    margin: 0 20px 20px;
+    border-radius: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
 }
 
 .menu-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 15px 5px;
+    padding: 16px 8px;
     border: none;
     background: none;
-    border-radius: 12px;
+    border-radius: 16px;
     cursor: pointer;
     transition: all 0.2s;
     color: #555;
@@ -119,41 +132,64 @@ body {
 
 .menu-btn span {
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .menu-btn.income {
     color: #10b981;
+    border: 2px solid #d1fae5;
+    background: #f0fdf4;
 }
 
 .menu-btn.expense {
     color: #ef4444;
+    border: 2px solid #fee2e2;
+    background: #fef2f2;
 }
 
 .menu-btn.categories {
     color: #8b5cf6;
+    border: 2px solid #ede9fe;
+    background: #f5f3ff;
 }
 
 .menu-btn.users {
     color: #3b82f6;
+    border: 2px solid #dbeafe;
+    background: #eff6ff;
+}
+
+.menu-btn.stats {
+    color: #f59e0b;
+    border: 2px solid #fef3c7;
+    background: #fffbeb;
+}
+
+.menu-btn.history {
+    color: #06b6d4;
+    border: 2px solid #cffafe;
+    background: #ecfeff;
 }
 
 .menu-btn:hover {
-    background: #f8fafc;
     transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.1);
 }
 
-/* SECTIONS */
+/* СЕКЦИИ */
 .section {
-    padding: 20px 16px;
-    border-bottom: 1px solid #eaeaea;
+    background: white;
+    margin: 0 20px 20px;
+    padding: 20px;
+    border-radius: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
 }
 
 .section-title {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
 .section-title h2 {
@@ -165,24 +201,6 @@ body {
     color: #444;
 }
 
-.icon-btn {
-    background: #f1f5f9;
-    border: none;
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    color: #64748b;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.icon-btn:hover {
-    background: #e2e8f0;
-}
-
 .text-btn {
     background: none;
     border: none;
@@ -190,7 +208,7 @@ body {
     font-weight: 600;
     font-size: 14px;
     cursor: pointer;
-    padding: 8px 12px;
+    padding: 6px 12px;
     border-radius: 8px;
     transition: all 0.2s;
 }
@@ -199,7 +217,7 @@ body {
     background: #f0f4ff;
 }
 
-/* CATEGORIES LIST */
+/* КАТЕГОРИИ */
 .categories-list {
     display: flex;
     flex-direction: column;
@@ -211,9 +229,10 @@ body {
     align-items: center;
     padding: 16px;
     background: #f8fafc;
-    border-radius: 12px;
+    border-radius: 16px;
     border-left: 4px solid #4361ee;
     transition: all 0.2s;
+    cursor: pointer;
 }
 
 .category-item:hover {
@@ -222,15 +241,16 @@ body {
 }
 
 .category-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 18px;
-    margin-right: 12px;
+    font-size: 20px;
+    margin-right: 16px;
+    flex-shrink: 0;
 }
 
 .category-info {
@@ -238,7 +258,7 @@ body {
 }
 
 .category-name {
-    font-weight: 600;
+    font-weight: 700;
     font-size: 16px;
     margin-bottom: 4px;
     color: #333;
@@ -251,12 +271,14 @@ body {
 }
 
 .category-balance {
-    font-weight: 700;
+    font-weight: 800;
     font-size: 18px;
     color: #1e293b;
+    min-width: 80px;
+    text-align: right;
 }
 
-/* TRANSACTIONS */
+/* ТРАНЗАКЦИИ */
 .transactions {
     display: flex;
     flex-direction: column;
@@ -266,27 +288,28 @@ body {
 .transaction-item {
     display: flex;
     align-items: center;
-    padding: 14px;
+    padding: 16px;
     background: white;
-    border-radius: 12px;
-    border: 1px solid #eaeaea;
+    border-radius: 16px;
+    border: 1px solid #f1f5f9;
     transition: all 0.2s;
 }
 
 .transaction-item:hover {
-    border-color: #cbd5e1;
+    border-color: #e2e8f0;
 }
 
 .transaction-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 16px;
-    margin-right: 12px;
+    font-size: 18px;
+    margin-right: 16px;
+    flex-shrink: 0;
 }
 
 .transaction-details {
@@ -294,7 +317,7 @@ body {
 }
 
 .transaction-title {
-    font-weight: 600;
+    font-weight: 700;
     font-size: 15px;
     color: #333;
     margin-bottom: 4px;
@@ -309,8 +332,10 @@ body {
 }
 
 .transaction-amount {
-    font-weight: 700;
-    font-size: 16px;
+    font-weight: 800;
+    font-size: 17px;
+    min-width: 80px;
+    text-align: right;
 }
 
 .transaction-amount.income {
@@ -321,11 +346,11 @@ body {
     color: #ef4444;
 }
 
-/* FAB */
+/* FAB КНОПКА */
 .fab {
     position: fixed;
-    bottom: 24px;
-    right: 24px;
+    bottom: 25px;
+    right: 25px;
     width: 56px;
     height: 56px;
     border-radius: 50%;
@@ -334,19 +359,20 @@ body {
     color: white;
     font-size: 24px;
     cursor: pointer;
-    box-shadow: 0 6px 20px rgba(67, 97, 238, 0.3);
+    box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
     transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
+    z-index: 100;
 }
 
 .fab:hover {
     transform: scale(1.1);
-    box-shadow: 0 8px 25px rgba(67, 97, 238, 0.4);
+    box-shadow: 0 8px 25px rgba(67, 97, 238, 0.5);
 }
 
-/* MODAL */
+/* МОДАЛЬНЫЕ ОКНА */
 .modal {
     display: none;
     position: fixed;
@@ -359,13 +385,7 @@ body {
     z-index: 1000;
     align-items: center;
     justify-content: center;
-    padding: 16px;
-    animation: fadeIn 0.3s;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    padding: 20px;
 }
 
 .modal-content {
@@ -402,14 +422,14 @@ body {
 }
 
 .close-btn {
-    background: none;
+    background: #f1f5f9;
     border: none;
-    font-size: 28px;
-    color: #94a3b8;
-    cursor: pointer;
     width: 40px;
     height: 40px;
     border-radius: 10px;
+    color: #64748b;
+    font-size: 22px;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -417,7 +437,7 @@ body {
 }
 
 .close-btn:hover {
-    background: #f1f5f9;
+    background: #e2e8f0;
     color: #333;
 }
 
@@ -425,7 +445,7 @@ body {
     padding: 20px;
 }
 
-/* FORMS */
+/* ФОРМЫ */
 .form-group {
     margin-bottom: 20px;
 }
@@ -440,9 +460,9 @@ body {
 
 .form-input {
     width: 100%;
-    padding: 12px 16px;
+    padding: 14px 16px;
     border: 2px solid #e2e8f0;
-    border-radius: 10px;
+    border-radius: 12px;
     font-size: 16px;
     transition: all 0.2s;
     background: white;
@@ -456,17 +476,12 @@ body {
 
 .form-select {
     width: 100%;
-    padding: 12px 16px;
+    padding: 14px 16px;
     border: 2px solid #e2e8f0;
-    border-radius: 10px;
+    border-radius: 12px;
     font-size: 16px;
     background: white;
     cursor: pointer;
-    appearance: none;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234361ee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 16px center;
-    background-size: 16px;
 }
 
 .form-select:focus {
@@ -474,26 +489,11 @@ body {
     border-color: #4361ee;
 }
 
-.form-color {
-    width: 40px;
-    height: 40px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    padding: 0;
-}
-
-.input-group {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-/* BUTTONS */
+/* КНОПКИ */
 .btn {
-    padding: 12px 24px;
+    padding: 14px 24px;
     border: none;
-    border-radius: 10px;
+    border-radius: 12px;
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
@@ -501,7 +501,7 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
 }
 
 .btn:hover {
@@ -526,62 +526,70 @@ body {
     box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
 }
 
-.btn-secondary {
-    background: #f1f5f9;
-    color: #475569;
-}
-
-.btn-secondary:hover {
-    background: #e2e8f0;
-}
-
 .btn-block {
     width: 100%;
 }
 
-/* CATEGORIES MANAGE */
+/* УПРАВЛЕНИЕ КАТЕГОРИЯМИ */
 .categories-manage {
     max-height: 200px;
     overflow-y: auto;
     margin-bottom: 20px;
-    border: 1px solid #eaeaea;
-    border-radius: 10px;
-    padding: 10px;
+    border: 2px solid #f1f5f9;
+    border-radius: 12px;
+    padding: 12px;
+    background: #f8fafc;
 }
 
 .category-manage-item {
     display: flex;
     align-items: center;
     padding: 12px;
-    background: #f8fafc;
-    border-radius: 8px;
+    background: white;
+    border-radius: 10px;
     margin-bottom: 8px;
+    border: 1px solid #e2e8f0;
 }
 
 .category-manage-color {
     width: 20px;
     height: 20px;
-    border-radius: 4px;
+    border-radius: 5px;
     margin-right: 12px;
 }
 
 .category-manage-name {
     flex: 1;
     font-weight: 600;
+    font-size: 15px;
+}
+
+.category-manage-balance {
+    font-weight: 700;
+    color: #1e293b;
+    margin-right: 12px;
 }
 
 .category-manage-delete {
     background: #fee2e2;
     color: #dc2626;
     border: none;
-    width: 30px;
-    height: 30px;
-    border-radius: 6px;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
 }
 
-/* USERS LIST */
+.category-manage-delete:hover {
+    background: #fecaca;
+}
+
+/* ПОЛЬЗОВАТЕЛИ */
 .users-list {
     margin-bottom: 20px;
 }
@@ -589,10 +597,11 @@ body {
 .user-item {
     display: flex;
     align-items: center;
-    padding: 12px;
+    padding: 16px;
     background: #f8fafc;
-    border-radius: 10px;
+    border-radius: 12px;
     margin-bottom: 10px;
+    border: 1px solid #e2e8f0;
 }
 
 .user-avatar {
@@ -606,48 +615,51 @@ body {
     justify-content: center;
     margin-right: 12px;
     font-weight: 600;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.user-info-text {
+    flex: 1;
 }
 
 .user-name {
-    flex: 1;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 2px;
+    color: #333;
+}
+
+.user-username {
+    font-size: 13px;
+    color: #64748b;
 }
 
 .user-delete {
     background: #fee2e2;
     color: #dc2626;
     border: none;
-    width: 30px;
-    height: 30px;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-/* ALERT & INFO */
-.alert {
-    padding: 12px 16px;
+    width: 36px;
+    height: 36px;
     border-radius: 10px;
-    margin-bottom: 20px;
-    font-size: 14px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
 }
 
-.alert.error {
-    background: #fee2e2;
-    color: #dc2626;
-    border: 1px solid #fecaca;
+.user-delete:hover {
+    background: #fecaca;
 }
 
-.alert.success {
-    background: #d1fae5;
-    color: #065f46;
-    border: 1px solid #a7f3d0;
-}
-
+/* ИНФО БЛОК */
 .info-box {
     background: #f0f9ff;
     border: 1px solid #bae6fd;
-    border-radius: 10px;
-    padding: 12px 16px;
+    border-radius: 12px;
+    padding: 16px;
     margin-top: 20px;
     display: flex;
     gap: 12px;
@@ -658,6 +670,7 @@ body {
     color: #0ea5e9;
     font-size: 18px;
     margin-top: 2px;
+    flex-shrink: 0;
 }
 
 .info-box p {
@@ -666,7 +679,32 @@ body {
     line-height: 1.4;
 }
 
-/* PERCENT MANAGER */
+/* ГРУППА ВВОДА */
+.input-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.input-group .form-input {
+    flex: 1;
+}
+
+.form-color {
+    width: 40px;
+    height: 40px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    padding: 0;
+    background: white;
+}
+
+/* ПРОЦЕНТЫ */
+.percent-manager {
+    margin: 20px 0;
+}
+
 .percent-item {
     display: flex;
     align-items: center;
@@ -676,27 +714,60 @@ body {
 
 .percent-name {
     flex: 1;
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 15px;
+    color: #333;
 }
 
 .percent-input {
     width: 80px;
-    padding: 8px 12px;
+    padding: 10px;
     border: 2px solid #e2e8f0;
     border-radius: 8px;
     text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.percent-input:focus {
+    outline: none;
+    border-color: #4361ee;
 }
 
 .percent-total {
     text-align: center;
-    padding: 12px;
+    padding: 16px;
     background: #f8fafc;
-    border-radius: 10px;
-    font-weight: 600;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 16px;
     margin-top: 16px;
+    border: 2px solid #e2e8f0;
 }
 
-/* EMPTY STATES */
+/* АЛЕРТЫ */
+.alert {
+    padding: 14px 16px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid transparent;
+}
+
+.alert.error {
+    background: #fee2e2;
+    color: #dc2626;
+    border-color: #fecaca;
+}
+
+.alert.success {
+    background: #d1fae5;
+    color: #065f46;
+    border-color: #a7f3d0;
+}
+
+/* ПУСТЫЕ СОСТОЯНИЯ */
 .empty-state {
     text-align: center;
     padding: 40px 20px;
@@ -709,20 +780,35 @@ body {
     opacity: 0.5;
 }
 
+.empty-state p {
+    font-size: 16px;
+    margin-bottom: 16px;
+    font-weight: 500;
+}
+
 /* RESPONSIVE */
 @media (max-width: 480px) {
+    .header {
+        padding: 16px;
+    }
+    
+    .header h1 {
+        font-size: 22px;
+    }
+    
     .balance-amount {
         font-size: 36px;
     }
     
     .quick-menu {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 8px;
-        padding: 16px 12px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        padding: 16px;
+        margin: 0 16px 16px;
     }
     
     .menu-btn {
-        padding: 12px 4px;
+        padding: 14px 6px;
     }
     
     .menu-btn i {
@@ -733,16 +819,17 @@ body {
         font-size: 11px;
     }
     
+    .section {
+        margin: 0 16px 16px;
+        padding: 16px;
+    }
+    
     .fab {
         bottom: 20px;
         right: 20px;
-        width: 50px;
-        height: 50px;
+        width: 52px;
+        height: 52px;
         font-size: 22px;
-    }
-    
-    .modal-content {
-        margin: 0 10px;
     }
 }
 
