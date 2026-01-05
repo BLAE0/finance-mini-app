@@ -3,390 +3,214 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>💰 Финансы в паре</title>
+    <title>💰 Финансы</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <meta name="theme-color" content="#6366f1">
-    <style>
-        .telegram-bg {
-            background: var(--tg-theme-bg-color, #f8fafc);
-            color: var(--tg-theme-text-color, #1e293b);
-        }
-    </style>
+    <meta name="theme-color" content="#4361ee">
 </head>
-<body class="telegram-bg">
-    <!-- Основной контейнер -->
-    <div class="container">
+<body>
+    <div class="app">
         <!-- Шапка -->
         <header class="header">
             <div class="header-top">
-                <div class="user-info">
-                    <div class="user-avatar" id="user-avatar">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div class="user-details">
-                        <h1 id="user-name">Финансы</h1>
-                        <p class="user-status" id="user-status">Личные финансы</p>
-                    </div>
+                <h1><i class="fas fa-coins"></i> Финансы</h1>
+                <div class="user-info" id="user-info">
+                    <i class="fas fa-user-circle"></i>
                 </div>
-                <button class="icon-btn" onclick="openSettings()">
-                    <i class="fas fa-cog"></i>
-                </button>
             </div>
-
-            <!-- Общий баланс -->
-            <div class="total-balance-card">
-                <div class="balance-main">
-                    <span class="balance-label">Общий баланс</span>
-                    <span class="balance-amount" id="total-balance">0 ₽</span>
-                </div>
-                <div class="balance-period">
-                    <select class="period-select" id="period-select" onchange="changePeriod(this.value)">
-                        <option value="current">Текущий месяц</option>
-                        <option value="day">Сегодня</option>
-                        <option value="week">Неделя</option>
-                        <option value="all">За всё время</option>
-                    </select>
+            
+            <div class="balance-card">
+                <div class="balance-label">Общий баланс</div>
+                <div class="balance-amount" id="total-balance">0 ₽</div>
+                <div class="period-tabs">
+                    <button class="period-tab active" onclick="setPeriod('day')">День</button>
+                    <button class="period-tab" onclick="setPeriod('month')">Месяц</button>
                 </div>
             </div>
         </header>
 
-        <!-- Основной контент -->
-        <main class="main">
-            <!-- Кнопки быстрых действий -->
-            <div class="quick-actions">
-                <button class="action-btn income" onclick="openAddModal('income')">
-                    <i class="fas fa-plus-circle"></i>
-                    <span>Доход</span>
-                </button>
-                <button class="action-btn expense" onclick="openAddModal('expense')">
-                    <i class="fas fa-minus-circle"></i>
-                    <span>Расход</span>
-                </button>
-                <button class="action-btn transfer" onclick="openTransferModal()">
-                    <i class="fas fa-exchange-alt"></i>
-                    <span>Перевод</span>
-                </button>
-                <button class="action-btn partners" onclick="openPartnersModal()">
-                    <i class="fas fa-user-plus"></i>
-                    <span>Партнёр</span>
-                </button>
+        <!-- Основное меню -->
+        <div class="quick-menu">
+            <button class="menu-btn income" onclick="openIncomeModal()">
+                <i class="fas fa-plus-circle"></i>
+                <span>Доход</span>
+            </button>
+            <button class="menu-btn expense" onclick="openExpenseModal()">
+                <i class="fas fa-minus-circle"></i>
+                <span>Расход</span>
+            </button>
+            <button class="menu-btn categories" onclick="openCategoriesModal()">
+                <i class="fas fa-tags"></i>
+                <span>Категории</span>
+            </button>
+            <button class="menu-btn users" onclick="openUsersModal()">
+                <i class="fas fa-users"></i>
+                <span>Люди</span>
+            </button>
+        </div>
+
+        <!-- Категории -->
+        <section class="section">
+            <div class="section-title">
+                <h2><i class="fas fa-folder-open"></i> Категории</h2>
+                <button class="icon-btn" onclick="openCategoryManage()"><i class="fas fa-edit"></i></button>
             </div>
-
-            <!-- Категории с балансами -->
-            <section class="categories-section">
-                <div class="section-header">
-                    <h2><i class="fas fa-list"></i> Категории</h2>
-                    <button class="btn-text" onclick="openCategoriesModal()">Изменить</button>
-                </div>
-                
-                <div class="categories-list" id="categories-list">
-                    <!-- Динамически заполнится -->
-                </div>
-            </section>
-
-            <!-- Последние операции -->
-            <section class="recent-transactions">
-                <div class="section-header">
-                    <h2><i class="fas fa-history"></i> Последние операции</h2>
-                    <button class="btn-text" onclick="showAllTransactions()">Все</button>
-                </div>
-                
-                <div class="transactions-container" id="recent-transactions">
-                    <!-- Динамически заполнится -->
-                </div>
-            </section>
-
-            <!-- Кнопки статистики и шаблонов -->
-            <div class="bottom-actions">
-                <button class="bottom-btn" onclick="openStatsModal()">
-                    <i class="fas fa-chart-pie"></i>
-                    <span>Статистика</span>
-                </button>
-                <button class="bottom-btn" onclick="openTemplatesModal()">
-                    <i class="fas fa-percentage"></i>
-                    <span>Шаблоны %</span>
-                </button>
-                <button class="bottom-btn" onclick="openBackupModal()">
-                    <i class="fas fa-download"></i>
-                    <span>Экспорт</span>
-                </button>
+            <div class="categories-list" id="categories-list">
+                <!-- Загрузятся через JS -->
             </div>
-        </main>
+        </section>
+
+        <!-- История -->
+        <section class="section">
+            <div class="section-title">
+                <h2><i class="fas fa-history"></i> Последние операции</h2>
+                <button class="text-btn" onclick="showAllTransactions()">Все</button>
+            </div>
+            <div class="transactions" id="transactions">
+                <!-- Загрузятся через JS -->
+            </div>
+        </section>
+
+        <!-- Кнопка добавления -->
+        <button class="fab" onclick="openIncomeModal()">
+            <i class="fas fa-plus"></i>
+        </button>
     </div>
 
-    <!-- Модальное окно добавления операции -->
-    <div id="add-modal" class="modal">
+    <!-- Модальное окно дохода -->
+    <div class="modal" id="income-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="modal-title">Добавить операцию</h3>
-                <button class="modal-close" onclick="closeAddModal()">&times;</button>
+                <h3><i class="fas fa-plus-circle"></i> Добавить доход</h3>
+                <button class="close-btn" onclick="closeModal('income-modal')">&times;</button>
             </div>
-            
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="amount">Сумма (₽)</label>
-                    <input type="number" id="amount" placeholder="0" min="1" step="100">
+                    <label>Сумма (₽)</label>
+                    <input type="number" id="income-amount" placeholder="1000" min="1" step="100" class="form-input">
                 </div>
-                
                 <div class="form-group">
-                    <label for="description">Описание</label>
-                    <input type="text" id="description" placeholder="На что потратили?">
+                    <label>Описание</label>
+                    <input type="text" id="income-description" placeholder="Зарплата, подарок..." class="form-input">
                 </div>
-                
                 <div class="form-group">
-                    <label for="category">Категория</label>
-                    <select id="category">
-                        <!-- Заполнится динамически -->
+                    <label>Период</label>
+                    <select id="income-period" class="form-select">
+                        <option value="one-time">Разовый</option>
+                        <option value="day">За день</option>
+                        <option value="month">За месяц</option>
                     </select>
                 </div>
-                
-                <div class="form-group" id="distribution-group">
-                    <label>Распределение:</label>
-                    <div class="distribution-options">
-                        <label class="radio-label">
-                            <input type="radio" name="distribution" value="specific" checked>
-                            <span>Из выбранной категории</span>
-                        </label>
-                        <label class="radio-label">
-                            <input type="radio" name="distribution" value="all">
-                            <span>Равно из всех категорий</span>
-                        </label>
-                        <label class="radio-label">
-                            <input type="radio" name="distribution" value="percentage">
-                            <span>По процентам из всех</span>
-                        </label>
-                    </div>
-                </div>
-                
-                <div class="form-group" id="date-group">
-                    <label for="date">Дата</label>
-                    <input type="date" id="date">
-                </div>
-                
-                <div class="form-group" id="template-group" style="display: none;">
-                    <label for="template">Шаблон распределения</label>
-                    <select id="template">
-                        <option value="">Выберите шаблон</option>
+                <div class="form-group">
+                    <label>Распределить по</label>
+                    <select id="income-distribute" class="form-select">
+                        <option value="all">Всем категориям равномерно</option>
+                        <option value="template">По шаблону %</option>
+                        <option value="specific">В конкретную категорию</option>
                     </select>
                 </div>
-                
-                <div class="modal-actions">
-                    <button class="btn-secondary" onclick="closeAddModal()">Отмена</button>
-                    <button class="btn-primary" id="modal-submit-btn" onclick="submitTransaction()">Добавить</button>
+                <div id="category-select-container" style="display: none;">
+                    <select id="income-category" class="form-select">
+                        <!-- Заполнится через JS -->
+                    </select>
                 </div>
+                <button class="btn btn-primary btn-block" onclick="addIncome()">Добавить доход</button>
             </div>
         </div>
     </div>
 
-    <!-- Модальное окно партнёров -->
-    <div id="partners-modal" class="modal">
+    <!-- Модальное окно расхода -->
+    <div class="modal" id="expense-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i class="fas fa-users"></i> Партнёры</h3>
-                <button class="modal-close" onclick="closeModal('partners-modal')">&times;</button>
+                <h3><i class="fas fa-minus-circle"></i> Добавить расход</h3>
+                <button class="close-btn" onclick="closeModal('expense-modal')">&times;</button>
             </div>
-            
             <div class="modal-body">
-                <div class="partners-list" id="partners-list">
-                    <!-- Динамически заполнится -->
+                <div class="form-group">
+                    <label>Сумма (₽)</label>
+                    <input type="number" id="expense-amount" placeholder="500" min="1" step="100" class="form-input">
                 </div>
-                
-                <div class="add-partner-form">
-                    <h4>Добавить партнёра</h4>
-                    <div class="form-group">
-                        <input type="text" id="partner-username" placeholder="@username в Telegram">
-                        <button class="btn-small" onclick="addPartner()">Добавить</button>
-                    </div>
-                    <p class="hint">Партнёр получит доступ к просмотру и редактированию</p>
+                <div class="form-group">
+                    <label>Описание</label>
+                    <input type="text" id="expense-description" placeholder="Еда, транспорт..." class="form-input">
                 </div>
-                
-                <div class="share-link">
-                    <h4>Ссылка для приглашения</h4>
-                    <div class="link-container">
-                        <input type="text" id="share-link" readonly>
-                        <button class="btn-small" onclick="copyShareLink()">Копировать</button>
-                    </div>
+                <div class="form-group">
+                    <label>Категория</label>
+                    <select id="expense-category" class="form-select">
+                        <!-- Заполнится через JS -->
+                    </select>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Модальное окно статистики -->
-    <div id="stats-modal" class="modal">
-        <div class="modal-content wide">
-            <div class="modal-header">
-                <h3><i class="fas fa-chart-bar"></i> Статистика</h3>
-                <button class="modal-close" onclick="closeModal('stats-modal')">&times;</button>
-            </div>
-            
-            <div class="modal-body">
-                <div class="stats-period-selector">
-                    <button class="period-btn active" data-period="month">Месяц</button>
-                    <button class="period-btn" data-period="week">Неделя</button>
-                    <button class="period-btn" data-period="all">Все время</button>
+                <div class="form-group">
+                    <label>Взять деньги из</label>
+                    <select id="expense-source" class="form-select">
+                        <option value="specific">Только этой категории</option>
+                        <option value="all">Всех категорий поровну</option>
+                    </select>
                 </div>
-                
-                <div class="stats-charts">
-                    <canvas id="expenses-chart"></canvas>
-                    <canvas id="income-chart"></canvas>
-                </div>
-                
-                <div class="stats-summary">
-                    <div class="stat-card">
-                        <div class="stat-label">Всего доходов</div>
-                        <div class="stat-value income" id="total-income">0 ₽</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Всего расходов</div>
-                        <div class="stat-value expense" id="total-expense">0 ₽</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Остаток</div>
-                        <div class="stat-value" id="total-balance-stat">0 ₽</div>
-                    </div>
-                </div>
+                <div class="alert" id="expense-alert" style="display: none;"></div>
+                <button class="btn btn-danger btn-block" onclick="addExpense()">Добавить расход</button>
             </div>
         </div>
     </div>
 
     <!-- Модальное окно категорий -->
-    <div id="categories-modal" class="modal">
+    <div class="modal" id="categories-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i class="fas fa-edit"></i> Управление категориями</h3>
-                <button class="modal-close" onclick="closeModal('categories-modal')">&times;</button>
+                <h3><i class="fas fa-tags"></i> Управление категориями</h3>
+                <button class="close-btn" onclick="closeModal('categories-modal')">&times;</button>
             </div>
-            
             <div class="modal-body">
-                <div class="categories-edit-list" id="categories-edit-list">
-                    <!-- Динамически заполнится -->
+                <div class="categories-manage" id="categories-manage">
+                    <!-- Список категорий -->
                 </div>
-                
-                <div class="add-category-form">
-                    <h4>Добавить категорию</h4>
-                    <div class="form-row">
-                        <input type="text" id="new-category-name" placeholder="Название">
-                        <input type="number" id="new-category-percent" placeholder="%" min="0" max="100">
-                        <button class="btn-small" onclick="addCategory()">Добавить</button>
+                <div class="form-group">
+                    <label>Новая категория</label>
+                    <div class="input-group">
+                        <input type="text" id="new-category-name" placeholder="Название категории" class="form-input">
+                        <input type="color" id="new-category-color" value="#4361ee" class="form-color">
+                        <button class="btn btn-secondary" onclick="addCategory()"><i class="fas fa-plus"></i></button>
                     </div>
                 </div>
-                
-                <div class="modal-actions">
-                    <button class="btn-primary" onclick="saveCategories()">Сохранить</button>
+                <div class="form-group">
+                    <label>Проценты распределения (всего должно быть 100%)</label>
+                    <div id="percent-manage">
+                        <!-- Проценты категорий -->
+                    </div>
+                    <button class="btn btn-primary btn-block" onclick="savePercentages()">Сохранить проценты</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Модальное окно всех транзакций -->
-    <div id="transactions-modal" class="modal">
-        <div class="modal-content wide">
-            <div class="modal-header">
-                <h3><i class="fas fa-receipt"></i> Все операции</h3>
-                <button class="modal-close" onclick="closeModal('transactions-modal')">&times;</button>
-            </div>
-            
-            <div class="modal-body">
-                <div class="transactions-filter">
-                    <select id="transactions-filter" onchange="filterTransactions()">
-                        <option value="all">Все операции</option>
-                        <option value="income">Только доходы</option>
-                        <option value="expense">Только расходы</option>
-                        <option value="month">Этот месяц</option>
-                    </select>
-                </div>
-                
-                <div class="all-transactions" id="all-transactions">
-                    <!-- Динамически заполнится -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Модальное окно шаблонов -->
-    <div id="templates-modal" class="modal">
+    <!-- Модальное окно людей -->
+    <div class="modal" id="users-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i class="fas fa-layer-group"></i> Шаблоны распределения</h3>
-                <button class="modal-close" onclick="closeModal('templates-modal')">&times;</button>
+                <h3><i class="fas fa-users"></i> Участники</h3>
+                <button class="close-btn" onclick="closeModal('users-modal')">&times;</button>
             </div>
-            
             <div class="modal-body">
-                <div class="templates-list" id="templates-list">
-                    <!-- Динамически заполнится -->
+                <div class="users-list" id="users-list">
+                    <!-- Список пользователей -->
                 </div>
-                
-                <div class="add-template-form">
-                    <h4>Создать шаблон</h4>
-                    <div class="form-group">
-                        <input type="text" id="template-name" placeholder="Название шаблона">
+                <div class="form-group">
+                    <label>Добавить по @username</label>
+                    <div class="input-group">
+                        <input type="text" id="new-username" placeholder="@username" class="form-input">
+                        <button class="btn btn-primary" onclick="addUser()">Добавить</button>
                     </div>
-                    <div class="template-categories" id="template-categories-edit">
-                        <!-- Динамически заполнится -->
-                    </div>
-                    <button class="btn-primary" onclick="createTemplate()">Создать шаблон</button>
+                </div>
+                <div class="info-box">
+                    <i class="fas fa-info-circle"></i>
+                    <p>Добавленные пользователи смогут видеть балансы и добавлять операции</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Модальное окно настроек -->
-    <div id="settings-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><i class="fas fa-sliders-h"></i> Настройки</h3>
-                <button class="modal-close" onclick="closeModal('settings-modal')">&times;</button>
-            </div>
-            
-            <div class="modal-body">
-                <div class="settings-group">
-                    <h4>Основные</h4>
-                    <div class="setting-item">
-                        <label>Валюта</label>
-                        <select id="currency-select">
-                            <option value="₽">Рубли (₽)</option>
-                            <option value="$">Доллары ($)</option>
-                            <option value="€">Евро (€)</option>
-                            <option value="¥">Иены (¥)</option>
-                        </select>
-                    </div>
-                    <div class="setting-item">
-                        <label>
-                            <input type="checkbox" id="notifications-toggle" checked>
-                            <span>Уведомления</span>
-                        </label>
-                    </div>
-                </div>
-                
-                <div class="settings-group">
-                    <h4>Резервная копия</h4>
-                    <div class="backup-actions">
-                        <button class="btn-secondary" onclick="exportData()">
-                            <i class="fas fa-file-export"></i> Экспорт данных
-                        </button>
-                        <button class="btn-secondary" onclick="importData()">
-                            <i class="fas fa-file-import"></i> Импорт данных
-                        </button>
-                    </div>
-                    <div class="danger-zone">
-                        <h4><i class="fas fa-exclamation-triangle"></i> Опасная зона</h4>
-                        <button class="btn-danger" onclick="resetData()">
-                            <i class="fas fa-trash"></i> Сбросить все данные
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Уведомление -->
-    <div id="notification" class="notification"></div>
-
-    <!-- Скрипты -->
     <script src="data.js"></script>
     <script src="app.js"></script>
 </body>
