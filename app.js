@@ -13,14 +13,11 @@ let statsChart = null;
 function updateUI() {
     const data = getData();
     
-    // Общий баланс
-    document.querySelector('.total-amount').textContent = `${data.totalBalance} ₽`;
+    document.querySelector('.total-amount').textContent = `${data.totalBalance} ${data.settings.currency}`;
     
-    // Балансы партнеров
-    document.getElementById('partner1-balance').textContent = `${Math.round(data.partners.Таня || 0)} ₽`;
-    document.getElementById('partner2-balance').textContent = `${Math.round(data.partners.Саша || 0)} ₽`;
+    document.getElementById('partner1-balance').textContent = `${Math.round(data.partners.Таня || 0)} ${data.settings.currency}`;
+    document.getElementById('partner2-balance').textContent = `${Math.round(data.partners.Саша || 0)} ${data.settings.currency}`;
     
-    // Шаблон
     renderTemplate();
 }
 
@@ -156,7 +153,7 @@ function removeTemplateRow(index) {
     const data = getData();
     data.template.splice(index, 1);
     saveData(data);
-    openTemplateModal(); // Перезагружаем модалку
+    openTemplateModal();
 }
 
 function saveTemplate() {
@@ -197,7 +194,6 @@ function openStatsModal() {
 }
 
 function changeStatsPeriod(period) {
-    // Активная кнопка
     document.querySelectorAll('.btn-period').forEach(btn => {
         btn.classList.remove('active');
     });
@@ -210,12 +206,10 @@ function renderStatsChart(period) {
     const ctx = document.getElementById('stats-chart').getContext('2d');
     const data = getData();
     
-    // Уничтожаем старый график
     if (statsChart) {
         statsChart.destroy();
     }
     
-    // Фильтруем транзакции по периоду
     const now = new Date();
     let filteredTransactions = data.transactions;
     
@@ -228,9 +222,7 @@ function renderStatsChart(period) {
         const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         filteredTransactions = data.transactions.filter(t => new Date(t.date) >= weekAgo);
     }
-    // month уже по умолчанию все
     
-    // Группируем по категориям расходов
     const categories = {};
     filteredTransactions.forEach(t => {
         if (t.type === 'expense') {
@@ -238,7 +230,6 @@ function renderStatsChart(period) {
         }
     });
     
-    // Если нет данных
     if (Object.keys(categories).length === 0) {
         document.getElementById('stats-chart').style.display = 'none';
         const noData = document.createElement('p');
@@ -250,7 +241,6 @@ function renderStatsChart(period) {
     
     document.getElementById('stats-chart').style.display = 'block';
     
-    // Создаем график
     statsChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -288,7 +278,6 @@ function openTransactionsModal() {
     if (data.transactions.length === 0) {
         container.innerHTML = '<p style="text-align: center; color: #6b7280;">Нет операций</p>';
     } else {
-        // Сортируем по дате (новые сверху)
         const sorted = [...data.transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
         
         sorted.forEach(transaction => {
@@ -305,7 +294,7 @@ function openTransactionsModal() {
             
             if (transaction.type === 'income') {
                 div.innerHTML = `
-                    <div class="transaction-amount income">+${transaction.amount} ₽</div>
+                    <div class="transaction-amount income">+${transaction.amount} ${data.settings.currency}</div>
                     <div class="transaction-info">
                         <div class="transaction-category">${transaction.description || 'Доход'}</div>
                         <div class="transaction-date">${formattedDate}</div>
@@ -313,7 +302,7 @@ function openTransactionsModal() {
                 `;
             } else {
                 div.innerHTML = `
-                    <div class="transaction-amount expense">-${transaction.amount} ₽</div>
+                    <div class="transaction-amount expense">-${transaction.amount} ${data.settings.currency}</div>
                     <div class="transaction-info">
                         <div class="transaction-category">${transaction.category} (${transaction.person})</div>
                         <div class="transaction-date">${formattedDate}</div>
@@ -328,21 +317,218 @@ function openTransactionsModal() {
     openModal('transactions-modal');
 }
 
+// Общий доступ
+function openPartnerModal() {
+    const data = getData();
+    const statusDiv = document.getElementById('partner-status');
+    const inviteSection = document.getElementById('partner-invite-section');
+    const joinSection = document.getElementById('partner-join-section');
+    
+    if (data.sharedAccess.enabled) {
+        statusDiv.innerHTML = `
+            <div class="partner-status connected">
+                <h4>✅ Общий доступ активен</h4>
+                <p>Синхронизировано с партнером</p>
+                <p><small>Последняя синхронизация: ${formatDate(data.sharedAccess.lastSync)}</small></p>
+                <button class="btn btn-expense btn-small" onclick="disableSharing()">Отключить</button>
+            </div>
+        `;
+        inviteSection.style.display = 'none';
+        joinSection.style.display = 'none';
+    } else {
+        statusDiv.innerHTML = `
+            <div class="partner-status disconnected">
+                <h4>🔗 Пригласить партнера</h4>
+                <p>Дайте доступ к данным вашему партнеру</p>
+            </div>
+        `;
+        
+        if (data.userInfo.telegramId) {
+            const code = getPartnerCode();
+            if (code) {
+                document.getElementById('partner-code-input').value = code;
+                inviteSection.style.display = 'block';
+                joinSection.style.display = 'none';
+            }
+        } else {
+            inviteSection.style.display = 'none';
+            joinSection.style.display = 'block';
+        }
+    }
+    
+    openModal('partner-modal');
+}
+
+function copyPartnerCode() {
+    const codeInput = document.getElementById('partner-code-input');
+    codeInput.select();
+    document.execCommand('copy');
+    showNotification('Код скопирован в буфер', 'success');
+}
+
+function joinPartner() {
+    const code = document.getElementById('partner-join-input').value;
+    if (!code) {
+        showNotification('Введите код приглашения', 'warning');
+        return;
+    }
+    
+    const partnerData = decodePartnerCode(code);
+    if (!partnerData) {
+        showNotification('Неверный код приглашения', 'error');
+        return;
+    }
+    
+    enablePartnerSharing(partnerData.userId);
+    showNotification(`Вы присоединились к ${partnerData.userName}`, 'success');
+    closeModal('partner-modal');
+    updateUI();
+}
+
+function disableSharing() {
+    if (confirm('Отключить общий доступ?')) {
+        disablePartnerSharing();
+        showNotification('Общий доступ отключен', 'success');
+        closeModal('partner-modal');
+        updateUI();
+    }
+}
+
+// Резервная копия
+function openBackupModal() {
+    const exportDataText = exportData();
+    document.getElementById('export-data').value = exportDataText;
+    document.getElementById('import-data').value = '';
+    openModal('backup-modal');
+}
+
+function copyExportData() {
+    const exportTextarea = document.getElementById('export-data');
+    exportTextarea.select();
+    document.execCommand('copy');
+    showNotification('Данные скопированы в буфер', 'success');
+}
+
+function downloadBackup() {
+    const data = exportData();
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `finance-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showNotification('Файл скачан', 'success');
+}
+
+function importBackup() {
+    const jsonData = document.getElementById('import-data').value;
+    if (!jsonData) {
+        showNotification('Введите данные для импорта', 'warning');
+        return;
+    }
+    
+    if (confirm('Это заменит все текущие данные. Продолжить?')) {
+        const result = importData(jsonData);
+        if (result.success) {
+            showNotification(result.message, 'success');
+            closeModal('backup-modal');
+        } else {
+            showNotification(result.message, 'error');
+        }
+    }
+}
+
+function resetMonthData() {
+    if (confirm('ВСЕ транзакции и балансы будут обнулены. Продолжить?')) {
+        resetMonthlyData();
+        showNotification('Данные месяца сброшены', 'success');
+        closeModal('backup-modal');
+    }
+}
+
+// Настройки
+function openSettingsModal() {
+    const data = getData();
+    document.getElementById('setting-notifications').checked = data.settings.notifications;
+    document.getElementById('setting-monthly-reset').checked = data.settings.monthlyReset;
+    document.getElementById('setting-currency').value = data.settings.currency;
+    openModal('settings-modal');
+}
+
+function saveSettings() {
+    const data = getData();
+    data.settings.notifications = document.getElementById('setting-notifications').checked;
+    data.settings.monthlyReset = document.getElementById('setting-monthly-reset').checked;
+    data.settings.currency = document.getElementById('setting-currency').value;
+    saveData(data);
+    showNotification('Настройки сохранены', 'success');
+    closeModal('settings-modal');
+    updateUI();
+}
+
+// Уведомления
+function showNotification(message, type = 'info') {
+    if (tg && tg.showAlert) {
+        tg.showAlert(message);
+        return;
+    }
+    
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+        <div class="notification-header">
+            <strong>${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</strong>
+            <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+        </div>
+        <div>${message}</div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+// Вспомогательные функции
+function formatDate(dateString) {
+    if (!dateString) return 'никогда';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+// Проверка напоминаний
+function checkAndShowReminders() {
+    const data = getData();
+    if (data.settings.notifications) {
+        const reminder = checkReminders();
+        if (reminder) {
+            showNotification(reminder.message, 'warning');
+        }
+    }
+}
+
 // Запуск
 document.addEventListener('DOMContentLoaded', function() {
     updateUI();
     
-    // Добавляем кнопку истории
-    const statsSection = document.querySelector('#stats-section');
-    const historyBtn = document.createElement('button');
-    historyBtn.className = 'btn btn-small';
-    historyBtn.textContent = '📋 История операций';
-    historyBtn.onclick = openTransactionsModal;
-    statsSection.querySelector('.stats-buttons').appendChild(historyBtn);
+    setTimeout(checkAndShowReminders, 2000);
     
-    // Меняем обработчик статистики
-    document.querySelector('#stats-section .stats-buttons').innerHTML = `
-        <button class="btn btn-small" onclick="openStatsModal()">📊 Графики</button>
-        <button class="btn btn-small" onclick="openTransactionsModal()">📋 История</button>
-    `;
+    setTimeout(() => {
+        const data = getData();
+        if (data.userInfo.name && data.userInfo.name !== 'Пользователь') {
+            document.querySelector('header h1').innerHTML = 
+                `💰 Финансовый помощник <small style="font-size: 14px; opacity: 0.8;">(${data.userInfo.name})</small>`;
+        }
+    }, 1000);
 });
