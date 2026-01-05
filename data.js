@@ -1,104 +1,96 @@
 // Финансовый помощник - Data Management
-// Версия 1.0
+// ВЕРСИЯ: 3.0 - Полная переработка
 
-// ===== КОНСТАНТЫ =====
-const CATEGORY_ICONS = {
-    'Продукты': 'fas fa-shopping-basket',
-    'Транспорт': 'fas fa-car',
-    'Жилье': 'fas fa-home',
-    'Развлечения': 'fas fa-film',
-    'Здоровье': 'fas fa-heartbeat',
-    'Одежда': 'fas fa-tshirt',
-    'Кафе': 'fas fa-utensils',
-    'Связь': 'fas fa-mobile-alt',
-    'Образование': 'fas fa-graduation-cap',
-    'Прочее': 'fas fa-ellipsis-h'
-};
+// ===== КОНСТАНТЫ И НАСТРОЙКИ =====
+const DEFAULT_CATEGORIES = [
+    { id: 1, name: 'Продукты', icon: 'fas fa-shopping-basket', color: '#10b981', percent: 30 },
+    { id: 2, name: 'Транспорт', icon: 'fas fa-car', color: '#3b82f6', percent: 15 },
+    { id: 3, name: 'Коммуналка', icon: 'fas fa-home', color: '#8b5cf6', percent: 25 },
+    { id: 4, name: 'Развлечения', icon: 'fas fa-film', color: '#ec4899', percent: 10 },
+    { id: 5, name: 'Прочее', icon: 'fas fa-ellipsis-h', color: '#64748b', percent: 20 }
+];
 
-const CATEGORY_COLORS = {
-    'Продукты': '#10b981',
-    'Транспорт': '#3b82f6',
-    'Жилье': '#8b5cf6',
-    'Развлечения': '#ec4899',
-    'Здоровье': '#ef4444',
-    'Одежда': '#f59e0b',
-    'Кафе': '#84cc16',
-    'Связь': '#06b6d4',
-    'Образование': '#6366f1',
-    'Прочее': '#64748b'
-};
+const DEFAULT_TEMPLATES = [
+    {
+        id: 1,
+        name: 'Стандартный',
+        categories: [
+            { categoryId: 1, percent: 30 },
+            { categoryId: 2, percent: 15 },
+            { categoryId: 3, percent: 25 },
+            { categoryId: 4, percent: 10 },
+            { categoryId: 5, percent: 20 }
+        ]
+    }
+];
 
 // ===== ИНИЦИАЛИЗАЦИЯ ДАННЫХ =====
-function initData() {
-    if (!localStorage.getItem('financeData')) {
-        const defaultData = {
-            version: '2.0',
-            // Категории
-            categories: [
-                { id: 1, name: 'Продукты', icon: 'fas fa-shopping-basket', color: '#10b981', balance: 0, percent: 30, userIds: [] },
-                { id: 2, name: 'Транспорт', icon: 'fas fa-car', color: '#3b82f6', balance: 0, percent: 15, userIds: [] },
-                { id: 3, name: 'Жилье', icon: 'fas fa-home', color: '#8b5cf6', balance: 0, percent: 25, userIds: [] },
-                { id: 4, name: 'Развлечения', icon: 'fas fa-film', color: '#ec4899', balance: 0, percent: 10, userIds: [] },
-                { id: 5, name: 'Прочее', icon: 'fas fa-ellipsis-h', color: '#64748b', balance: 0, percent: 20, userIds: [] }
-            ],
-            // Пользователи
-            users: [],
-            // Шаблоны распределения
-            templates: [
-                { 
-                    name: 'Стандартный', 
-                    distribution: [
-                        { categoryId: 1, percent: 30 },
-                        { categoryId: 2, percent: 15 },
-                        { categoryId: 3, percent: 25 },
-                        { categoryId: 4, percent: 10 },
-                        { categoryId: 5, percent: 20 }
-                    ]
-                }
-            ],
+function initAppData() {
+    if (!localStorage.getItem('financeApp')) {
+        const appData = {
+            version: '3.0',
+            totalBalance: 0,
+            currency: '₽',
+            
+            // Категории с балансами
+            categories: DEFAULT_CATEGORIES.map(cat => ({
+                ...cat,
+                balance: 0,
+                spent: 0
+            })),
+            
             // Транзакции
             transactions: [],
+            
+            // Пользователи (партнёры)
+            users: [],
+            
+            // Шаблоны распределения
+            templates: DEFAULT_TEMPLATES,
+            
             // Настройки
             settings: {
-                currency: '₽',
                 notifications: true,
                 darkMode: false,
                 monthlyReset: false
             },
-            // Общий баланс
-            totalBalance: 0,
-            // Период отображения
-            currentPeriod: 'month',
+            
             // Общий доступ
-            sharedAccess: {
+            sharing: {
                 enabled: false,
-                sharedWith: [],
-                accessCode: null
+                shareCode: null,
+                sharedWith: []
             },
-            // Текущий пользователь
-            currentUser: null
+            
+            // Текущий период
+            currentPeriod: 'current'
         };
         
-        localStorage.setItem('financeData', JSON.stringify(defaultData));
+        localStorage.setItem('financeApp', JSON.stringify(appData));
     }
     
     // Инициализация Telegram пользователя
     initTelegramUser();
+    
+    return getAppData();
 }
 
-// ===== РАБОТА С ДАННЫМИ =====
-function getData() {
-    return JSON.parse(localStorage.getItem('financeData')) || {};
+// ===== ОСНОВНЫЕ ФУНКЦИИ ДАННЫХ =====
+function getAppData() {
+    const data = JSON.parse(localStorage.getItem('financeApp'));
+    if (!data) return initAppData();
+    return data;
 }
 
-function saveData(data) {
-    localStorage.setItem('financeData', JSON.stringify(data));
+function saveAppData(data) {
+    localStorage.setItem('financeApp', JSON.stringify(data));
+    updateUI(); // Обновляем интерфейс
 }
 
-function updateData(callback) {
-    const data = getData();
-    callback(data);
-    saveData(data);
+function updateAppData(updater) {
+    const data = getAppData();
+    updater(data);
+    saveAppData(data);
 }
 
 // ===== ПОЛЬЗОВАТЕЛИ =====
@@ -107,329 +99,439 @@ function initTelegramUser() {
         const tg = window.Telegram.WebApp;
         const user = tg.initDataUnsafe?.user;
         
-        if (user) {
-            updateData(data => {
-                const existingUser = data.users.find(u => u.id === user.id);
-                
-                if (!existingUser) {
-                    data.users.push({
-                        id: user.id,
-                        username: user.username || `user_${user.id}`,
-                        firstName: user.first_name,
-                        lastName: user.last_name,
-                        photoUrl: user.photo_url,
-                        isAdmin: true,
-                        joinedAt: new Date().toISOString()
-                    });
-                }
-                
-                data.currentUser = user.id;
+        if (user && !getCurrentUser()) {
+            updateAppData(data => {
+                data.users.push({
+                    id: user.id,
+                    username: user.username || `user_${user.id}`,
+                    firstName: user.first_name || 'Пользователь',
+                    lastName: user.last_name || '',
+                    photoUrl: user.photo_url,
+                    isAdmin: true,
+                    isCurrent: true,
+                    joinedAt: new Date().toISOString()
+                });
             });
         }
     }
 }
 
-function addUser(username, isAdmin = false) {
-    return updateData(data => {
-        // Проверяем, нет ли уже такого пользователя
-        if (data.users.some(u => u.username === username)) {
-            throw new Error('Пользователь уже существует');
-        }
-        
-        // В реальном приложении здесь бы было обращение к API Telegram
-        const newUser = {
-            id: Date.now(), // Временный ID, в реальном приложении - Telegram ID
-            username: username,
-            firstName: username,
-            isAdmin: isAdmin,
-            joinedAt: new Date().toISOString()
-        };
-        
-        data.users.push(newUser);
-        
-        // Добавляем пользователя ко всем категориям
-        data.categories.forEach(category => {
-            if (!category.userIds.includes(newUser.id)) {
-                category.userIds.push(newUser.id);
-            }
-        });
-    });
+function getCurrentUser() {
+    const data = getAppData();
+    return data.users.find(u => u.isCurrent) || data.users[0];
 }
 
-function removeUser(userId) {
-    updateData(data => {
+function addPartner(username) {
+    if (!username.startsWith('@')) {
+        username = '@' + username;
+    }
+    
+    // В реальном приложении здесь бы была проверка через Telegram API
+    updateAppData(data => {
+        // Проверяем, нет ли уже такого пользователя
+        if (data.users.some(u => u.username === username)) {
+            throw new Error('Пользователь уже добавлен');
+        }
+        
+        data.users.push({
+            id: Date.now(),
+            username: username,
+            firstName: username,
+            isAdmin: false,
+            isCurrent: false,
+            joinedAt: new Date().toISOString()
+        });
+        
+        // Включаем общий доступ
+        data.sharing.enabled = true;
+        data.sharing.sharedWith.push(username);
+    });
+    
+    return username;
+}
+
+function removePartner(userId) {
+    updateAppData(data => {
         data.users = data.users.filter(u => u.id !== userId);
         
-        // Удаляем пользователя из категорий
-        data.categories.forEach(category => {
-            category.userIds = category.userIds.filter(id => id !== userId);
-        });
+        // Если не осталось партнёров, выключаем общий доступ
+        if (data.users.filter(u => !u.isCurrent).length === 0) {
+            data.sharing.enabled = false;
+        }
     });
 }
 
 // ===== КАТЕГОРИИ =====
-function getCategoryById(id) {
-    const data = getData();
+function getCategories() {
+    const data = getAppData();
+    return data.categories;
+}
+
+function getCategory(id) {
+    const data = getAppData();
     return data.categories.find(c => c.id === id);
 }
 
-function addCategory(name, color, icon) {
-    return updateData(data => {
-        const newCategory = {
-            id: Date.now(),
-            name: name,
-            icon: icon || CATEGORY_ICONS[name] || 'fas fa-ellipsis-h',
-            color: color || CATEGORY_COLORS[name] || '#64748b',
-            balance: 0,
-            percent: 0,
-            userIds: data.users.map(u => u.id) // Все пользователи по умолчанию
-        };
-        
-        data.categories.push(newCategory);
-        return newCategory.id;
-    });
-}
-
-function updateCategory(categoryId, updates) {
-    updateData(data => {
-        const category = data.categories.find(c => c.id === categoryId);
+function updateCategory(id, updates) {
+    updateAppData(data => {
+        const category = data.categories.find(c => c.id === id);
         if (category) {
             Object.assign(category, updates);
         }
     });
 }
 
-function deleteCategory(categoryId) {
-    updateData(data => {
-        // Перераспределяем баланс удаляемой категории
-        const category = data.categories.find(c => c.id === categoryId);
+function addCategory(name, percent = 0, color = null, icon = null) {
+    const newId = Date.now();
+    
+    updateAppData(data => {
+        data.categories.push({
+            id: newId,
+            name: name,
+            icon: icon || 'fas fa-ellipsis-h',
+            color: color || '#64748b',
+            percent: percent,
+            balance: 0,
+            spent: 0
+        });
+    });
+    
+    return newId;
+}
+
+function deleteCategory(id) {
+    updateAppData(data => {
+        const category = data.categories.find(c => c.id === id);
         if (category) {
-            // Распределяем баланс равномерно по остальным категориям
-            const otherCategories = data.categories.filter(c => c.id !== categoryId);
-            if (otherCategories.length > 0) {
+            // Распределяем баланс категории по остальным
+            const otherCategories = data.categories.filter(c => c.id !== id);
+            if (otherCategories.length > 0 && category.balance > 0) {
                 const share = category.balance / otherCategories.length;
                 otherCategories.forEach(c => {
                     c.balance += share;
                 });
-                data.totalBalance -= category.balance; // Уже распределено
             }
             
             // Удаляем категорию
-            data.categories = data.categories.filter(c => c.id !== categoryId);
-            
-            // Обновляем транзакции
-            data.transactions = data.transactions.filter(t => 
-                !t.categoryId || t.categoryId !== categoryId
-            );
+            data.categories = data.categories.filter(c => c.id !== id);
         }
     });
 }
 
 // ===== ТРАНЗАКЦИИ =====
 function addTransaction(type, amount, options = {}) {
-    return updateData(data => {
+    const transactionId = Date.now();
+    const date = options.date ? new Date(options.date) : new Date();
+    
+    updateAppData(data => {
         const transaction = {
-            id: Date.now(),
+            id: transactionId,
             type: type, // 'income', 'expense', 'transfer'
-            amount: amount,
-            date: new Date().toISOString(),
+            amount: parseFloat(amount),
+            date: date.toISOString(),
             description: options.description || '',
             categoryId: options.categoryId,
             categoryName: options.categoryName,
-            userId: data.currentUser,
-            period: data.currentPeriod,
-            distributed: options.distributed || false,
-            distribution: options.distribution || [] // Для распределенных расходов
+            distribution: options.distribution || 'specific',
+            period: getCurrentPeriod(),
+            userId: getCurrentUser()?.id
         };
         
         data.transactions.push(transaction);
         
-        // Обновляем балансы
+        // ОБРАБОТКА БАЛАНСОВ
         if (type === 'income') {
-            data.totalBalance += amount;
+            data.totalBalance += transaction.amount;
             
             if (options.templateId) {
-                // Распределяем по шаблону
+                // Распределение по шаблону
                 const template = data.templates.find(t => t.id === options.templateId);
                 if (template) {
-                    template.distribution.forEach(dist => {
-                        const category = data.categories.find(c => c.id === dist.categoryId);
+                    template.categories.forEach(tc => {
+                        const category = data.categories.find(c => c.id === tc.categoryId);
                         if (category) {
-                            const categoryAmount = (amount * dist.percent) / 100;
+                            const categoryAmount = (amount * tc.percent) / 100;
                             category.balance += categoryAmount;
                         }
                     });
                 }
-            } else if (options.categoryId) {
-                // Зачисляем в конкретную категорию
-                const category = data.categories.find(c => c.id === options.categoryId);
-                if (category) {
-                    category.balance += amount;
-                }
-            } else {
-                // Равномерное распределение
-                const activeCategories = data.categories.filter(c => 
-                    c.userIds.includes(data.currentUser)
-                );
-                
+            } else if (options.distribution === 'all') {
+                // Равное распределение по всем категориям
+                const activeCategories = data.categories.filter(c => c.percent > 0);
                 if (activeCategories.length > 0) {
                     const share = amount / activeCategories.length;
                     activeCategories.forEach(category => {
                         category.balance += share;
                     });
                 }
+            } else if (options.categoryId) {
+                // В конкретную категорию
+                const category = data.categories.find(c => c.id === options.categoryId);
+                if (category) {
+                    category.balance += amount;
+                }
             }
         } 
         else if (type === 'expense') {
-            if (options.distributed === true) {
-                // Распределенный расход
-                const activeCategories = data.categories.filter(c => 
-                    c.userIds.includes(data.currentUser) && c.balance > 0
-                );
-                
+            if (options.distribution === 'all') {
+                // Равное списание со всех категорий
+                const activeCategories = data.categories.filter(c => c.balance > 0);
                 if (activeCategories.length > 0) {
                     const share = amount / activeCategories.length;
-                    let distributedAmount = 0;
+                    let distributed = 0;
                     
                     activeCategories.forEach(category => {
-                        const deductAmount = Math.min(category.balance, share);
-                        category.balance -= deductAmount;
-                        distributedAmount += deductAmount;
-                        
-                        transaction.distribution.push({
-                            categoryId: category.id,
-                            categoryName: category.name,
-                            amount: deductAmount
-                        });
+                        const deduct = Math.min(category.balance, share);
+                        category.balance -= deduct;
+                        category.spent += deduct;
+                        distributed += deduct;
                     });
                     
-                    data.totalBalance -= distributedAmount;
-                    transaction.amount = distributedAmount;
+                    data.totalBalance -= distributed;
+                    transaction.amount = distributed; // Обновляем сумму в транзакции
                 }
             } 
+            else if (options.distribution === 'percentage') {
+                // Списание по процентам категорий
+                const totalPercent = data.categories.reduce((sum, cat) => sum + cat.percent, 0);
+                if (totalPercent > 0) {
+                    let distributed = 0;
+                    
+                    data.categories.forEach(category => {
+                        if (category.percent > 0 && category.balance > 0) {
+                            const categoryAmount = (amount * category.percent) / totalPercent;
+                            const deduct = Math.min(category.balance, categoryAmount);
+                            category.balance -= deduct;
+                            category.spent += deduct;
+                            distributed += deduct;
+                        }
+                    });
+                    
+                    data.totalBalance -= distributed;
+                    transaction.amount = distributed;
+                }
+            }
             else if (options.categoryId) {
-                // Расход из конкретной категории
+                // Списание из конкретной категории
                 const category = data.categories.find(c => c.id === options.categoryId);
                 if (category && category.balance >= amount) {
                     category.balance -= amount;
+                    category.spent += amount;
                     data.totalBalance -= amount;
                 } else {
-                    throw new Error('Недостаточно средств в категории');
+                    throw new Error(`Недостаточно средств в категории "${category.name}"`);
                 }
             }
         }
+    });
+    
+    return transactionId;
+}
+
+function getTransactions(period = 'current') {
+    const data = getAppData();
+    let transactions = [...data.transactions];
+    
+    // Фильтрация по периоду
+    if (period !== 'all') {
+        const now = new Date();
+        let startDate;
         
-        return transaction.id;
-    });
-}
-
-function getTransactions(period = 'month') {
-    const data = getData();
-    let filtered = data.transactions;
-    
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    switch (period) {
-        case 'day':
-            filtered = filtered.filter(t => new Date(t.date) >= dayStart);
-            break;
-        case 'month':
-            filtered = filtered.filter(t => new Date(t.date) >= monthStart);
-            break;
-        // 'all' - все транзакции
-    }
-    
-    return filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
-}
-
-// ===== РАСПРЕДЕЛЕНИЕ =====
-function distributeIncome(amount, templateId = null) {
-    const data = getData();
-    
-    if (templateId) {
-        // Используем шаблон
-        const template = data.templates.find(t => t.id === templateId);
-        if (template) {
-            return addTransaction('income', amount, { 
-                templateId: templateId,
-                description: 'Доход по шаблону'
-            });
+        switch (period) {
+            case 'day':
+                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                break;
+            case 'week':
+                startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+            case 'month':
+            case 'current':
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                break;
         }
+        
+        transactions = transactions.filter(t => new Date(t.date) >= startDate);
     }
     
-    // Равномерное распределение
-    return addTransaction('income', amount, {
-        description: 'Доход',
-        distributed: true
-    });
+    // Сортировка по дате (новые сверху)
+    return transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
-function distributeExpense(amount, options = {}) {
-    const { fromAllCategories = false, categoryId = null } = options;
+// ===== ШАБЛОНЫ РАСПРЕДЕЛЕНИЯ =====
+function getTemplates() {
+    const data = getAppData();
+    return data.templates;
+}
+
+function createTemplate(name, categories) {
+    const templateId = Date.now();
     
-    if (fromAllCategories) {
-        // Распределить расход по всем категориям
-        return addTransaction('expense', amount, {
-            distributed: true,
-            description: options.description || 'Распределенный расход'
+    updateAppData(data => {
+        data.templates.push({
+            id: templateId,
+            name: name,
+            categories: categories.map(c => ({
+                categoryId: c.id,
+                percent: c.percent
+            }))
         });
-    } else if (categoryId) {
-        // Расход из конкретной категории
-        return addTransaction('expense', amount, {
-            categoryId: categoryId,
-            categoryName: options.categoryName,
-            description: options.description || 'Расход'
-        });
-    }
+    });
+    
+    return templateId;
+}
+
+function applyTemplate(templateId, amount) {
+    const template = getTemplates().find(t => t.id === templateId);
+    if (!template) return null;
+    
+    return addTransaction('income', amount, {
+        templateId: templateId,
+        distribution: 'template',
+        description: `Доход по шаблону "${template.name}"`
+    });
 }
 
 // ===== ОБЩИЙ ДОСТУП =====
-function generateAccessCode() {
-    const code = Math.random().toString(36).substring(2, 10).toUpperCase();
-    updateData(data => {
-        data.sharedAccess.accessCode = code;
+function generateShareCode() {
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    updateAppData(data => {
+        data.sharing.shareCode = code;
     });
     return code;
 }
 
-function shareWithUser(username, accessLevel = 'view') {
-    // В реальном приложении здесь бы была интеграция с Telegram API
-    updateData(data => {
-        data.sharedAccess.sharedWith.push({
-            username: username,
-            accessLevel: accessLevel,
-            joinedAt: new Date().toISOString()
+function getShareLink() {
+    const data = getAppData();
+    const code = data.sharing.shareCode || generateShareCode();
+    return `https://t.me/share/url?url=${encodeURIComponent(window.location.origin)}&text=${encodeURIComponent(`Присоединяйся к нашему финансовому приложению! Код: ${code}`)}`;
+}
+
+// ===== СТАТИСТИКА =====
+function getStats(period = 'current') {
+    const transactions = getTransactions(period);
+    const categories = getCategories();
+    
+    const income = transactions.filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0);
+    
+    const expense = transactions.filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + t.amount, 0);
+    
+    const categoryStats = categories.map(category => {
+        const categoryTransactions = transactions.filter(t => 
+            t.categoryId === category.id || 
+            (t.distribution === 'percentage' && category.percent > 0)
+        );
+        
+        const spent = categoryTransactions
+            .filter(t => t.type === 'expense')
+            .reduce((sum, t) => sum + t.amount, 0);
+        
+        const received = categoryTransactions
+            .filter(t => t.type === 'income')
+            .reduce((sum, t) => sum + t.amount, 0);
+        
+        return {
+            ...category,
+            spent: spent,
+            received: received,
+            net: received - spent
+        };
+    });
+    
+    return {
+        totalIncome: income,
+        totalExpense: expense,
+        balance: income - expense,
+        categories: categoryStats,
+        transactionsCount: transactions.length
+    };
+}
+
+// ===== УТИЛИТЫ =====
+function formatCurrency(amount) {
+    const data = getAppData();
+    return new Intl.NumberFormat('ru-RU', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(amount) + ' ' + data.currency;
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    if (date >= today) {
+        return 'Сегодня ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    } else if (date >= yesterday) {
+        return 'Вчера ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    } else {
+        return date.toLocaleDateString('ru-RU', {
+            day: '2-digit',
+            month: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
         });
-        data.sharedAccess.enabled = true;
+    }
+}
+
+function getCurrentPeriod() {
+    const data = getAppData();
+    return data.currentPeriod || 'current';
+}
+
+function setCurrentPeriod(period) {
+    updateAppData(data => {
+        data.currentPeriod = period;
     });
 }
 
-// ===== СБРОС ДАННЫХ =====
-function resetPeriod(period) {
-    updateData(data => {
-        if (period === 'month') {
-            // Сохраняем только категории и настройки
-            const categories = data.categories.map(c => ({
-                ...c,
-                balance: 0
-            }));
-            
-            const newData = {
-                ...data,
-                categories: categories,
-                transactions: [],
-                totalBalance: 0
-            };
-            
-            saveData(newData);
+// ===== ЭКСПОРТ/ИМПОРТ =====
+function exportData() {
+    const data = getAppData();
+    const exportData = {
+        ...data,
+        exportDate: new Date().toISOString(),
+        version: '3.0'
+    };
+    
+    return JSON.stringify(exportData, null, 2);
+}
+
+function importData(jsonString) {
+    try {
+        const imported = JSON.parse(jsonString);
+        
+        // Базовая валидация
+        if (!imported.categories || !imported.transactions) {
+            throw new Error('Некорректный формат данных');
         }
-    });
+        
+        // Сохраняем
+        localStorage.setItem('financeApp', JSON.stringify(imported));
+        
+        // Обновляем UI
+        updateUI();
+        
+        return { success: true, message: 'Данные успешно импортированы' };
+    } catch (error) {
+        return { success: false, message: 'Ошибка импорта: ' + error.message };
+    }
 }
 
-// ===== ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ =====
+function resetData() {
+    if (confirm('Вы уверены? Все данные будут удалены безвозвратно.')) {
+        localStorage.removeItem('financeApp');
+        initAppData();
+        updateUI();
+        showNotification('Данные сброшены', 'success');
+    }
+}
+
+// ===== ИНИЦИАЛИЗАЦИЯ =====
 document.addEventListener('DOMContentLoaded', function() {
-    initData();
-    // UI обновится через app.js
+    initAppData();
 });
