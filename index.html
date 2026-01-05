@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Финансовый помощник | Telegram Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <meta name="description" content="Telegram Mini App для учета финансов с партнером">
+    <meta name="theme-color" content="#4f46e5">
 </head>
 <body>
     <div class="container">
@@ -20,25 +22,23 @@
                 <h2>📊 Общий баланс</h2>
                 <p class="total-amount">0 ₽</p>
                 <div class="buttons">
-    <button class="btn btn-income" onclick="openIncomeModal()">📥 Добавить доход</button>
-    <button class="btn btn-expense" onclick="openExpenseModal()">📤 Добавить расход</button>
-    <button class="btn btn-secondary" onclick="openTransactionsModal()">📋 История</button>
+                    <button class="btn btn-income" onclick="openIncomeModal()">📥 Добавить доход</button>
+                    <button class="btn btn-expense" onclick="openExpenseModal()">📤 Добавить расход</button>
+                    <button class="btn btn-secondary" onclick="openTransactionsModal()">📋 История</button>
                 </div>
             </section>
 
             <section class="card" id="template-section">
                 <h2>📝 Шаблон распределения</h2>
-                <div id="template-list">
-                    <!-- Шаблоны будут здесь -->
-                </div>
+                <div id="template-list"></div>
                 <button class="btn btn-secondary" onclick="openTemplateModal()">✏️ Редактировать шаблон</button>
             </section>
 
             <section class="card" id="stats-section">
                 <h2>📈 Статистика</h2>
                 <div class="stats-buttons">
-                    <button class="btn btn-small" onclick="showStats('day')">За день</button>
-                    <button class="btn btn-small" onclick="showStats('month')">За месяц</button>
+                    <button class="btn btn-small" onclick="openStatsModal()">📊 Графики</button>
+                    <button class="btn btn-small" onclick="openTransactionsModal()">📋 История</button>
                 </div>
                 <div id="stats-content"></div>
             </section>
@@ -47,7 +47,16 @@
                 <h2>👥 Партнеры</h2>
                 <p>Таня: <span id="partner1-balance">0 ₽</span></p>
                 <p>Саша: <span id="partner2-balance">0 ₽</span></p>
-                <button class="btn btn-secondary" onclick="openPartnerModal()">🔗 Дать доступ партнеру</button>
+                <button class="btn btn-secondary" onclick="openPartnerModal()">🔗 Общий доступ</button>
+            </section>
+
+            <section class="card" id="advanced-section">
+                <h2>⚙️ Дополнительно</h2>
+                <div class="buttons">
+                    <button class="btn btn-secondary" onclick="openPartnerModal()">👥 Общий доступ</button>
+                    <button class="btn btn-secondary" onclick="openBackupModal()">💾 Резервная копия</button>
+                    <button class="btn btn-secondary" onclick="openSettingsModal()">⚙️ Настройки</button>
+                </div>
             </section>
         </main>
 
@@ -56,77 +65,153 @@
         </footer>
     </div>
 
-    <!-- Модальное окно дохода -->
-<div id="income-modal" class="modal">
-    <div class="modal-content">
-        <h3>📥 Добавить доход</h3>
-        <input type="number" id="income-amount" placeholder="Сумма" min="1" step="100">
-        <textarea id="income-description" placeholder="Описание (необязательно)"></textarea>
-        <div class="modal-buttons">
-            <button class="btn btn-secondary" onclick="closeModal('income-modal')">Отмена</button>
-            <button class="btn btn-income" onclick="submitIncome()">Добавить</button>
+    <!-- Модальные окна -->
+    <div id="income-modal" class="modal">
+        <div class="modal-content">
+            <h3>📥 Добавить доход</h3>
+            <input type="number" id="income-amount" placeholder="Сумма" min="1" step="100">
+            <textarea id="income-description" placeholder="Описание (необязательно)"></textarea>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeModal('income-modal')">Отмена</button>
+                <button class="btn btn-income" onclick="submitIncome()">Добавить</button>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- Модальное окно расхода -->
-<div id="expense-modal" class="modal">
-    <div class="modal-content">
-        <h3>📤 Добавить расход</h3>
-        <input type="number" id="expense-amount" placeholder="Сумма" min="1" step="100">
-        <input type="text" id="expense-category" placeholder="Категория">
-        <select id="expense-person">
-            <option value="Таня">Таня</option>
-            <option value="Саша">Саша</option>
-        </select>
-        <div class="modal-buttons">
-            <button class="btn btn-secondary" onclick="closeModal('expense-modal')">Отмена</button>
-            <button class="btn btn-expense" onclick="submitExpense()">Добавить</button>
+    <div id="expense-modal" class="modal">
+        <div class="modal-content">
+            <h3>📤 Добавить расход</h3>
+            <input type="number" id="expense-amount" placeholder="Сумма" min="1" step="100">
+            <input type="text" id="expense-category" placeholder="Категория">
+            <select id="expense-person">
+                <option value="Таня">Таня</option>
+                <option value="Саша">Саша</option>
+            </select>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeModal('expense-modal')">Отмена</button>
+                <button class="btn btn-expense" onclick="submitExpense()">Добавить</button>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- Модальное окно редактирования шаблона -->
-<div id="template-modal" class="modal">
-    <div class="modal-content">
-        <h3>✏️ Редактировать шаблон</h3>
-        <div id="template-edit-list">
-            <!-- Динамически добавится -->
-        </div>
-        <button class="btn btn-small" onclick="addTemplateRow()">➕ Добавить строку</button>
-        <div class="modal-buttons">
-            <button class="btn btn-secondary" onclick="closeModal('template-modal')">Отмена</button>
-            <button class="btn btn-income" onclick="saveTemplate()">Сохранить</button>
+    <div id="template-modal" class="modal">
+        <div class="modal-content">
+            <h3>✏️ Редактировать шаблон</h3>
+            <div id="template-edit-list"></div>
+            <button class="btn btn-small" onclick="addTemplateRow()">➕ Добавить строку</button>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeModal('template-modal')">Отмена</button>
+                <button class="btn btn-income" onclick="saveTemplate()">Сохранить</button>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- Модальное окно статистики -->
-<div id="stats-modal" class="modal">
-    <div class="modal-content">
-        <h3>📈 Статистика</h3>
-        <div class="stats-period">
-            <button class="btn-period active" onclick="changeStatsPeriod('day')">День</button>
-            <button class="btn-period" onclick="changeStatsPeriod('week')">Неделя</button>
-            <button class="btn-period" onclick="changeStatsPeriod('month')">Месяц</button>
-        </div>
-        <canvas id="stats-chart"></canvas>
-        <div class="modal-buttons">
-            <button class="btn btn-secondary" onclick="closeModal('stats-modal')">Закрыть</button>
+    <div id="stats-modal" class="modal">
+        <div class="modal-content">
+            <h3>📈 Статистика</h3>
+            <div class="stats-period">
+                <button class="btn-period active" onclick="changeStatsPeriod('day')">День</button>
+                <button class="btn-period" onclick="changeStatsPeriod('week')">Неделя</button>
+                <button class="btn-period" onclick="changeStatsPeriod('month')">Месяц</button>
+            </div>
+            <canvas id="stats-chart"></canvas>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeModal('stats-modal')">Закрыть</button>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- Модальное окно транзакций -->
-<div id="transactions-modal" class="modal">
-    <div class="modal-content">
-        <h3>📋 История операций</h3>
-        <div id="transactions-list"></div>
-        <div class="modal-buttons">
-            <button class="btn btn-secondary" onclick="closeModal('transactions-modal')">Закрыть</button>
+    <div id="transactions-modal" class="modal">
+        <div class="modal-content">
+            <h3>📋 История операций</h3>
+            <div id="transactions-list"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeModal('transactions-modal')">Закрыть</button>
+            </div>
         </div>
     </div>
-</div>
+
+    <div id="partner-modal" class="modal">
+        <div class="modal-content">
+            <h3>👥 Общий доступ</h3>
+            <div class="partner-status" id="partner-status"></div>
+            <div id="partner-invite-section" style="display: none;">
+                <h4>Пригласить партнера</h4>
+                <div class="invite-code">
+                    <input type="text" id="partner-code-input" readonly>
+                    <button class="btn btn-small" onclick="copyPartnerCode()">📋 Копировать</button>
+                </div>
+                <p class="hint">Отправьте этот код партнеру</p>
+            </div>
+            <div id="partner-join-section" style="display: none;">
+                <h4>Присоединиться</h4>
+                <input type="text" id="partner-join-input" placeholder="Введите код приглашения">
+                <div class="modal-buttons">
+                    <button class="btn btn-secondary" onclick="closeModal('partner-modal')">Отмена</button>
+                    <button class="btn btn-income" onclick="joinPartner()">Присоединиться</button>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeModal('partner-modal')">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="backup-modal" class="modal">
+        <div class="modal-content">
+            <h3>💾 Резервная копия</h3>
+            <div class="backup-section">
+                <h4>Экспорт данных</h4>
+                <textarea id="export-data" readonly rows="6"></textarea>
+                <button class="btn btn-small" onclick="copyExportData()">📋 Копировать JSON</button>
+                <button class="btn btn-small" onclick="downloadBackup()">📥 Скачать файл</button>
+            </div>
+            <div class="backup-section">
+                <h4>Импорт данных</h4>
+                <textarea id="import-data" placeholder="Вставьте JSON данные..." rows="6"></textarea>
+                <div class="modal-buttons">
+                    <button class="btn btn-secondary" onclick="closeModal('backup-modal')">Отмена</button>
+                    <button class="btn btn-income" onclick="importBackup()">Импортировать</button>
+                </div>
+            </div>
+            <div class="danger-zone">
+                <h4 style="color: #ef4444;">⚠️ Опасная зона</h4>
+                <button class="btn btn-expense" onclick="resetMonthData()">🔄 Сбросить месяц</button>
+                <p class="hint">Обнулит все транзакции и балансы</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <h3>⚙️ Настройки</h3>
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="setting-notifications" checked>
+                    <span>Уведомления и напоминания</span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="setting-monthly-reset">
+                    <span>Сброс данных в конце месяца</span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <label>Валюта:</label>
+                <select id="setting-currency">
+                    <option value="₽">Рубли (₽)</option>
+                    <option value="$">Доллары ($)</option>
+                    <option value="€">Евро (€)</option>
+                    <option value="¥">Иены (¥)</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeModal('settings-modal')">Отмена</button>
+                <button class="btn btn-income" onclick="saveSettings()">Сохранить</button>
+            </div>
+        </div>
+    </div>
 
     <script src="data.js"></script>
     <script src="app.js"></script>
