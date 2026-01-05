@@ -1,239 +1,435 @@
-// Инициализация данных в localStorage
+// Финансовый помощник - Data Management
+// Версия 1.0
+
+// ===== КОНСТАНТЫ =====
+const CATEGORY_ICONS = {
+    'Продукты': 'fas fa-shopping-basket',
+    'Транспорт': 'fas fa-car',
+    'Жилье': 'fas fa-home',
+    'Развлечения': 'fas fa-film',
+    'Здоровье': 'fas fa-heartbeat',
+    'Одежда': 'fas fa-tshirt',
+    'Кафе': 'fas fa-utensils',
+    'Связь': 'fas fa-mobile-alt',
+    'Образование': 'fas fa-graduation-cap',
+    'Прочее': 'fas fa-ellipsis-h'
+};
+
+const CATEGORY_COLORS = {
+    'Продукты': '#10b981',
+    'Транспорт': '#3b82f6',
+    'Жилье': '#8b5cf6',
+    'Развлечения': '#ec4899',
+    'Здоровье': '#ef4444',
+    'Одежда': '#f59e0b',
+    'Кафе': '#84cc16',
+    'Связь': '#06b6d4',
+    'Образование': '#6366f1',
+    'Прочее': '#64748b'
+};
+
+// ===== ИНИЦИАЛИЗАЦИЯ ДАННЫХ =====
 function initData() {
     if (!localStorage.getItem('financeData')) {
         const defaultData = {
-            totalBalance: 0,
-            partners: {
-                Таня: 0,
-                Саша: 0
-            },
-            template: [
-                { category: "Коммуналка", percent: 40, person: "Таня" },
-                { category: "Озон", percent: 15, person: "Таня" },
-                { category: "Продукты", percent: 25, person: "Таня" },
-                { category: "Машина", percent: 20, person: "Саша" }
+            version: '2.0',
+            // Категории
+            categories: [
+                { id: 1, name: 'Продукты', icon: 'fas fa-shopping-basket', color: '#10b981', balance: 0, percent: 30, userIds: [] },
+                { id: 2, name: 'Транспорт', icon: 'fas fa-car', color: '#3b82f6', balance: 0, percent: 15, userIds: [] },
+                { id: 3, name: 'Жилье', icon: 'fas fa-home', color: '#8b5cf6', balance: 0, percent: 25, userIds: [] },
+                { id: 4, name: 'Развлечения', icon: 'fas fa-film', color: '#ec4899', balance: 0, percent: 10, userIds: [] },
+                { id: 5, name: 'Прочее', icon: 'fas fa-ellipsis-h', color: '#64748b', balance: 0, percent: 20, userIds: [] }
             ],
+            // Пользователи
+            users: [],
+            // Шаблоны распределения
+            templates: [
+                { 
+                    name: 'Стандартный', 
+                    distribution: [
+                        { categoryId: 1, percent: 30 },
+                        { categoryId: 2, percent: 15 },
+                        { categoryId: 3, percent: 25 },
+                        { categoryId: 4, percent: 10 },
+                        { categoryId: 5, percent: 20 }
+                    ]
+                }
+            ],
+            // Транзакции
             transactions: [],
-            sharedAccess: {
-                enabled: false,
-                partnerId: null,
-                lastSync: null
-            },
+            // Настройки
             settings: {
-                notifications: true,
                 currency: '₽',
+                notifications: true,
+                darkMode: false,
                 monthlyReset: false
             },
-            userInfo: {
-                telegramId: null,
-                name: 'Пользователь'
-            }
+            // Общий баланс
+            totalBalance: 0,
+            // Период отображения
+            currentPeriod: 'month',
+            // Общий доступ
+            sharedAccess: {
+                enabled: false,
+                sharedWith: [],
+                accessCode: null
+            },
+            // Текущий пользователь
+            currentUser: null
         };
+        
         localStorage.setItem('financeData', JSON.stringify(defaultData));
     }
     
+    // Инициализация Telegram пользователя
     initTelegramUser();
 }
 
-// Инициализация пользователя Telegram
+// ===== РАБОТА С ДАННЫМИ =====
+function getData() {
+    return JSON.parse(localStorage.getItem('financeData')) || {};
+}
+
+function saveData(data) {
+    localStorage.setItem('financeData', JSON.stringify(data));
+}
+
+function updateData(callback) {
+    const data = getData();
+    callback(data);
+    saveData(data);
+}
+
+// ===== ПОЛЬЗОВАТЕЛИ =====
 function initTelegramUser() {
-    let data = getData();
-    
     if (typeof Telegram !== 'undefined') {
         const tg = window.Telegram.WebApp;
         const user = tg.initDataUnsafe?.user;
         
         if (user) {
-            data.userInfo.telegramId = user.id;
-            data.userInfo.name = user.first_name || 'Пользователь';
-            
-            if (data.sharedAccess.enabled && data.sharedAccess.partnerId) {
-                checkPartnerSync();
+            updateData(data => {
+                const existingUser = data.users.find(u => u.id === user.id);
+                
+                if (!existingUser) {
+                    data.users.push({
+                        id: user.id,
+                        username: user.username || `user_${user.id}`,
+                        firstName: user.first_name,
+                        lastName: user.last_name,
+                        photoUrl: user.photo_url,
+                        isAdmin: true,
+                        joinedAt: new Date().toISOString()
+                    });
+                }
+                
+                data.currentUser = user.id;
+            });
+        }
+    }
+}
+
+function addUser(username, isAdmin = false) {
+    return updateData(data => {
+        // Проверяем, нет ли уже такого пользователя
+        if (data.users.some(u => u.username === username)) {
+            throw new Error('Пользователь уже существует');
+        }
+        
+        // В реальном приложении здесь бы было обращение к API Telegram
+        const newUser = {
+            id: Date.now(), // Временный ID, в реальном приложении - Telegram ID
+            username: username,
+            firstName: username,
+            isAdmin: isAdmin,
+            joinedAt: new Date().toISOString()
+        };
+        
+        data.users.push(newUser);
+        
+        // Добавляем пользователя ко всем категориям
+        data.categories.forEach(category => {
+            if (!category.userIds.includes(newUser.id)) {
+                category.userIds.push(newUser.id);
+            }
+        });
+    });
+}
+
+function removeUser(userId) {
+    updateData(data => {
+        data.users = data.users.filter(u => u.id !== userId);
+        
+        // Удаляем пользователя из категорий
+        data.categories.forEach(category => {
+            category.userIds = category.userIds.filter(id => id !== userId);
+        });
+    });
+}
+
+// ===== КАТЕГОРИИ =====
+function getCategoryById(id) {
+    const data = getData();
+    return data.categories.find(c => c.id === id);
+}
+
+function addCategory(name, color, icon) {
+    return updateData(data => {
+        const newCategory = {
+            id: Date.now(),
+            name: name,
+            icon: icon || CATEGORY_ICONS[name] || 'fas fa-ellipsis-h',
+            color: color || CATEGORY_COLORS[name] || '#64748b',
+            balance: 0,
+            percent: 0,
+            userIds: data.users.map(u => u.id) // Все пользователи по умолчанию
+        };
+        
+        data.categories.push(newCategory);
+        return newCategory.id;
+    });
+}
+
+function updateCategory(categoryId, updates) {
+    updateData(data => {
+        const category = data.categories.find(c => c.id === categoryId);
+        if (category) {
+            Object.assign(category, updates);
+        }
+    });
+}
+
+function deleteCategory(categoryId) {
+    updateData(data => {
+        // Перераспределяем баланс удаляемой категории
+        const category = data.categories.find(c => c.id === categoryId);
+        if (category) {
+            // Распределяем баланс равномерно по остальным категориям
+            const otherCategories = data.categories.filter(c => c.id !== categoryId);
+            if (otherCategories.length > 0) {
+                const share = category.balance / otherCategories.length;
+                otherCategories.forEach(c => {
+                    c.balance += share;
+                });
+                data.totalBalance -= category.balance; // Уже распределено
             }
             
-            saveData(data);
+            // Удаляем категорию
+            data.categories = data.categories.filter(c => c.id !== categoryId);
+            
+            // Обновляем транзакции
+            data.transactions = data.transactions.filter(t => 
+                !t.categoryId || t.categoryId !== categoryId
+            );
         }
-    }
-}
-
-// Получить все данные
-function getData() {
-    return JSON.parse(localStorage.getItem('financeData')) || {};
-}
-
-// Сохранить данные
-function saveData(data) {
-    localStorage.setItem('financeData', JSON.stringify(data));
-}
-
-// Добавить доход
-function addIncome(amount, description = 'Доход') {
-    let data = getData();
-    data.totalBalance += amount;
-    
-    data.template.forEach(item => {
-        const share = (amount * item.percent) / 100;
-        data.partners[item.person] = (data.partners[item.person] || 0) + share;
     });
-
-    data.transactions.push({
-        type: 'income',
-        amount: amount,
-        date: new Date().toISOString(),
-        description: description
-    });
-
-    saveData(data);
-    updateUI();
 }
 
-// Добавить расход
-function addExpense(amount, category, person) {
-    let data = getData();
-    if (data.totalBalance >= amount) {
-        data.totalBalance -= amount;
-        data.partners[person] = (data.partners[person] || 0) - amount;
-        
-        data.transactions.push({
-            type: 'expense',
+// ===== ТРАНЗАКЦИИ =====
+function addTransaction(type, amount, options = {}) {
+    return updateData(data => {
+        const transaction = {
+            id: Date.now(),
+            type: type, // 'income', 'expense', 'transfer'
             amount: amount,
-            category: category,
-            person: person,
-            date: new Date().toISOString()
-        });
-
-        saveData(data);
-        updateUI();
-        return true;
-    }
-    return false;
-}
-
-// Общий доступ
-function enablePartnerSharing(partnerTelegramId) {
-    let data = getData();
-    data.sharedAccess.enabled = true;
-    data.sharedAccess.partnerId = partnerTelegramId;
-    data.sharedAccess.lastSync = new Date().toISOString();
-    saveData(data);
-    return true;
-}
-
-function disablePartnerSharing() {
-    let data = getData();
-    data.sharedAccess.enabled = false;
-    data.sharedAccess.partnerId = null;
-    saveData(data);
-    return true;
-}
-
-function getPartnerCode() {
-    const data = getData();
-    if (data.userInfo.telegramId) {
-        return btoa(JSON.stringify({
-            userId: data.userInfo.telegramId,
-            userName: data.userInfo.name,
-            timestamp: new Date().getTime()
-        }));
-    }
-    return null;
-}
-
-function decodePartnerCode(code) {
-    try {
-        return JSON.parse(atob(code));
-    } catch (e) {
-        return null;
-    }
-}
-
-function checkPartnerSync() {
-    // В реальном приложении здесь бы была синхронизация с сервером
-    console.log('Проверка синхронизации с партнером');
-}
-
-// Экспорт/импорт
-function exportData() {
-    const data = getData();
-    const exportObj = {
-        version: '1.0',
-        exportedAt: new Date().toISOString(),
-        data: data
-    };
-    
-    return JSON.stringify(exportObj, null, 2);
-}
-
-function importData(jsonString) {
-    try {
-        const importObj = JSON.parse(jsonString);
+            date: new Date().toISOString(),
+            description: options.description || '',
+            categoryId: options.categoryId,
+            categoryName: options.categoryName,
+            userId: data.currentUser,
+            period: data.currentPeriod,
+            distributed: options.distributed || false,
+            distribution: options.distribution || [] // Для распределенных расходов
+        };
         
-        if (!importObj.data || !importObj.data.transactions) {
-            throw new Error('Некорректный формат данных');
+        data.transactions.push(transaction);
+        
+        // Обновляем балансы
+        if (type === 'income') {
+            data.totalBalance += amount;
+            
+            if (options.templateId) {
+                // Распределяем по шаблону
+                const template = data.templates.find(t => t.id === options.templateId);
+                if (template) {
+                    template.distribution.forEach(dist => {
+                        const category = data.categories.find(c => c.id === dist.categoryId);
+                        if (category) {
+                            const categoryAmount = (amount * dist.percent) / 100;
+                            category.balance += categoryAmount;
+                        }
+                    });
+                }
+            } else if (options.categoryId) {
+                // Зачисляем в конкретную категорию
+                const category = data.categories.find(c => c.id === options.categoryId);
+                if (category) {
+                    category.balance += amount;
+                }
+            } else {
+                // Равномерное распределение
+                const activeCategories = data.categories.filter(c => 
+                    c.userIds.includes(data.currentUser)
+                );
+                
+                if (activeCategories.length > 0) {
+                    const share = amount / activeCategories.length;
+                    activeCategories.forEach(category => {
+                        category.balance += share;
+                    });
+                }
+            }
+        } 
+        else if (type === 'expense') {
+            if (options.distributed === true) {
+                // Распределенный расход
+                const activeCategories = data.categories.filter(c => 
+                    c.userIds.includes(data.currentUser) && c.balance > 0
+                );
+                
+                if (activeCategories.length > 0) {
+                    const share = amount / activeCategories.length;
+                    let distributedAmount = 0;
+                    
+                    activeCategories.forEach(category => {
+                        const deductAmount = Math.min(category.balance, share);
+                        category.balance -= deductAmount;
+                        distributedAmount += deductAmount;
+                        
+                        transaction.distribution.push({
+                            categoryId: category.id,
+                            categoryName: category.name,
+                            amount: deductAmount
+                        });
+                    });
+                    
+                    data.totalBalance -= distributedAmount;
+                    transaction.amount = distributedAmount;
+                }
+            } 
+            else if (options.categoryId) {
+                // Расход из конкретной категории
+                const category = data.categories.find(c => c.id === options.categoryId);
+                if (category && category.balance >= amount) {
+                    category.balance -= amount;
+                    data.totalBalance -= amount;
+                } else {
+                    throw new Error('Недостаточно средств в категории');
+                }
+            }
         }
         
-        localStorage.setItem('financeData', JSON.stringify(importObj.data));
-        updateUI();
-        
-        return { success: true, message: 'Данные успешно импортированы' };
-    } catch (error) {
-        return { success: false, message: 'Ошибка импорта: ' + error.message };
-    }
+        return transaction.id;
+    });
 }
 
-// Напоминания
-function checkReminders() {
+function getTransactions(period = 'month') {
     const data = getData();
-    const today = new Date();
-    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    let filtered = data.transactions;
     
-    if (data.settings.monthlyReset && today.getDate() === lastDayOfMonth.getDate()) {
-        return {
-            type: 'monthly_reset',
-            message: 'Завтра начинается новый месяц. Проверьте остатки по категориям.'
-        };
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    switch (period) {
+        case 'day':
+            filtered = filtered.filter(t => new Date(t.date) >= dayStart);
+            break;
+        case 'month':
+            filtered = filtered.filter(t => new Date(t.date) >= monthStart);
+            break;
+        // 'all' - все транзакции
     }
     
-    if (data.totalBalance < 1000) {
-        return {
-            type: 'low_balance',
-            message: `Внимание! Общий баланс низкий: ${data.totalBalance} ₽`
-        };
+    return filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+}
+
+// ===== РАСПРЕДЕЛЕНИЕ =====
+function distributeIncome(amount, templateId = null) {
+    const data = getData();
+    
+    if (templateId) {
+        // Используем шаблон
+        const template = data.templates.find(t => t.id === templateId);
+        if (template) {
+            return addTransaction('income', amount, { 
+                templateId: templateId,
+                description: 'Доход по шаблону'
+            });
+        }
     }
     
-    return null;
+    // Равномерное распределение
+    return addTransaction('income', amount, {
+        description: 'Доход',
+        distributed: true
+    });
 }
 
-// Сброс месяца
-function resetMonthlyData() {
-    let data = getData();
+function distributeExpense(amount, options = {}) {
+    const { fromAllCategories = false, categoryId = null } = options;
     
-    const template = data.template;
-    const settings = data.settings;
-    const sharedAccess = data.sharedAccess;
-    const userInfo = data.userInfo;
-    
-    const newData = {
-        totalBalance: 0,
-        partners: {
-            Таня: 0,
-            Саша: 0
-        },
-        template: template,
-        transactions: [],
-        sharedAccess: sharedAccess,
-        settings: settings,
-        userInfo: userInfo
-    };
-    
-    localStorage.setItem('financeData', JSON.stringify(newData));
-    updateUI();
-    
-    return true;
+    if (fromAllCategories) {
+        // Распределить расход по всем категориям
+        return addTransaction('expense', amount, {
+            distributed: true,
+            description: options.description || 'Распределенный расход'
+        });
+    } else if (categoryId) {
+        // Расход из конкретной категории
+        return addTransaction('expense', amount, {
+            categoryId: categoryId,
+            categoryName: options.categoryName,
+            description: options.description || 'Расход'
+        });
+    }
 }
 
-// Инициализация при загрузке
+// ===== ОБЩИЙ ДОСТУП =====
+function generateAccessCode() {
+    const code = Math.random().toString(36).substring(2, 10).toUpperCase();
+    updateData(data => {
+        data.sharedAccess.accessCode = code;
+    });
+    return code;
+}
+
+function shareWithUser(username, accessLevel = 'view') {
+    // В реальном приложении здесь бы была интеграция с Telegram API
+    updateData(data => {
+        data.sharedAccess.sharedWith.push({
+            username: username,
+            accessLevel: accessLevel,
+            joinedAt: new Date().toISOString()
+        });
+        data.sharedAccess.enabled = true;
+    });
+}
+
+// ===== СБРОС ДАННЫХ =====
+function resetPeriod(period) {
+    updateData(data => {
+        if (period === 'month') {
+            // Сохраняем только категории и настройки
+            const categories = data.categories.map(c => ({
+                ...c,
+                balance: 0
+            }));
+            
+            const newData = {
+                ...data,
+                categories: categories,
+                transactions: [],
+                totalBalance: 0
+            };
+            
+            saveData(newData);
+        }
+    });
+}
+
+// ===== ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ =====
 document.addEventListener('DOMContentLoaded', function() {
     initData();
-    updateUI();
+    // UI обновится через app.js
 });
