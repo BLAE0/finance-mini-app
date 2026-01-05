@@ -1,67 +1,62 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Финансы</title>
+    <title>Финансовый помощник | Telegram Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body {
-            font-family: Arial;
-            padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            margin: 0;
-            text-align: center;
-        }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 20px;
-            max-width: 400px;
-            margin: 50px auto;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        h1 { color: #4f46e5; }
-        button {
-            background: #4f46e5;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 10px;
-            font-size: 16px;
-            margin: 10px;
-            cursor: pointer;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>💰 Финансовый помощник</h1>
-        <p>Учет доходов и расходов</p>
-        <button onclick="addIncome()">📥 Доход</button>
-        <button onclick="addExpense()">📤 Расход</button>
-        <div id="status" style="margin-top:20px; padding:15px; background:#f0f9ff; border-radius:10px;">
-            Готово к работе
-        </div>
+        <header>
+            <h1>💰 Финансовый помощник</h1>
+            <p class="subtitle">Учет доходов и расходов для двоих</p>
+        </header>
+
+        <main>
+            <section class="card" id="balance-section">
+                <h2>📊 Общий баланс</h2>
+                <p class="total-amount">0 ₽</p>
+                <div class="buttons">
+                    <button class="btn btn-income" onclick="openIncomeModal()">📥 Добавить доход</button>
+                    <button class="btn btn-expense" onclick="openExpenseModal()">📤 Добавить расход</button>
+                </div>
+            </section>
+
+            <section class="card" id="template-section">
+                <h2>📝 Шаблон распределения</h2>
+                <div id="template-list">
+                    <!-- Шаблоны будут здесь -->
+                </div>
+                <button class="btn btn-secondary" onclick="openTemplateModal()">✏️ Редактировать шаблон</button>
+            </section>
+
+            <section class="card" id="stats-section">
+                <h2>📈 Статистика</h2>
+                <div class="stats-buttons">
+                    <button class="btn btn-small" onclick="showStats('day')">За день</button>
+                    <button class="btn btn-small" onclick="showStats('month')">За месяц</button>
+                </div>
+                <div id="stats-content"></div>
+            </section>
+
+            <section class="card" id="partners-section">
+                <h2>👥 Партнеры</h2>
+                <p>Таня: <span id="partner1-balance">0 ₽</span></p>
+                <p>Саша: <span id="partner2-balance">0 ₽</span></p>
+                <button class="btn btn-secondary" onclick="openPartnerModal()">🔗 Дать доступ партнеру</button>
+            </section>
+        </main>
+
+        <footer>
+            <p class="hint">Данные хранятся в вашем браузере (localStorage)</p>
+        </footer>
     </div>
 
-    <script>
-        // Телеграм Web App
-        if (typeof Telegram !== 'undefined') {
-            let tg = window.Telegram.WebApp;
-            tg.expand();
-            tg.ready();
-            document.getElementById('status').innerHTML = '✅ Mini App запущен в Telegram';
-        }
+    <!-- Модальные окна будут здесь -->
 
-        function addIncome() {
-            alert('Добавление дохода - функция в разработке');
-        }
-
-        function addExpense() {
-            alert('Добавление расхода - функция в разработке');
-        }
-    </script>
+    <script src="data.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
