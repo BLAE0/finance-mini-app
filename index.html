@@ -54,7 +54,77 @@
         </footer>
     </div>
 
-    <!-- Модальные окна будут здесь -->
+    <!-- Модальное окно дохода -->
+<div id="income-modal" class="modal">
+    <div class="modal-content">
+        <h3>📥 Добавить доход</h3>
+        <input type="number" id="income-amount" placeholder="Сумма" min="1" step="100">
+        <textarea id="income-description" placeholder="Описание (необязательно)"></textarea>
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" onclick="closeModal('income-modal')">Отмена</button>
+            <button class="btn btn-income" onclick="submitIncome()">Добавить</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно расхода -->
+<div id="expense-modal" class="modal">
+    <div class="modal-content">
+        <h3>📤 Добавить расход</h3>
+        <input type="number" id="expense-amount" placeholder="Сумма" min="1" step="100">
+        <input type="text" id="expense-category" placeholder="Категория">
+        <select id="expense-person">
+            <option value="Таня">Таня</option>
+            <option value="Саша">Саша</option>
+        </select>
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" onclick="closeModal('expense-modal')">Отмена</button>
+            <button class="btn btn-expense" onclick="submitExpense()">Добавить</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно редактирования шаблона -->
+<div id="template-modal" class="modal">
+    <div class="modal-content">
+        <h3>✏️ Редактировать шаблон</h3>
+        <div id="template-edit-list">
+            <!-- Динамически добавится -->
+        </div>
+        <button class="btn btn-small" onclick="addTemplateRow()">➕ Добавить строку</button>
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" onclick="closeModal('template-modal')">Отмена</button>
+            <button class="btn btn-income" onclick="saveTemplate()">Сохранить</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно статистики -->
+<div id="stats-modal" class="modal">
+    <div class="modal-content">
+        <h3>📈 Статистика</h3>
+        <div class="stats-period">
+            <button class="btn-period active" onclick="changeStatsPeriod('day')">День</button>
+            <button class="btn-period" onclick="changeStatsPeriod('week')">Неделя</button>
+            <button class="btn-period" onclick="changeStatsPeriod('month')">Месяц</button>
+        </div>
+        <canvas id="stats-chart"></canvas>
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" onclick="closeModal('stats-modal')">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно транзакций -->
+<div id="transactions-modal" class="modal">
+    <div class="modal-content">
+        <h3>📋 История операций</h3>
+        <div id="transactions-list"></div>
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" onclick="closeModal('transactions-modal')">Закрыть</button>
+        </div>
+    </div>
+</div>
 
     <script src="data.js"></script>
     <script src="app.js"></script>
