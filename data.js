@@ -30,7 +30,8 @@ function saveData(data) {
 }
 
 // Добавить доход
-function addIncome(amount) {
+
+function addIncome(amount, description = 'Доход') {
     let data = getData();
     data.totalBalance += amount;
     
@@ -45,7 +46,7 @@ function addIncome(amount) {
         type: 'income',
         amount: amount,
         date: new Date().toISOString(),
-        description: 'Доход'
+        description: description
     });
 
     saveData(data);
