@@ -2,21 +2,21 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>💰 Финансы</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <meta name="theme-color" content="#4361ee">
 </head>
 <body>
     <div class="app">
         <!-- Шапка -->
         <header class="header">
             <div class="header-top">
-                <h1><i class="fas fa-coins"></i> Финансы</h1>
+                <h1><i class="fas fa-wallet"></i> Финансы</h1>
                 <div class="user-info" id="user-info">
                     <i class="fas fa-user-circle"></i>
+                    <span id="user-name">Вы</span>
                 </div>
             </div>
             
@@ -26,11 +26,12 @@
                 <div class="period-tabs">
                     <button class="period-tab active" onclick="setPeriod('day')">День</button>
                     <button class="period-tab" onclick="setPeriod('month')">Месяц</button>
+                    <button class="period-tab" onclick="setPeriod('all')">Все</button>
                 </div>
             </div>
         </header>
 
-        <!-- Основное меню -->
+        <!-- Быстрые кнопки -->
         <div class="quick-menu">
             <button class="menu-btn income" onclick="openIncomeModal()">
                 <i class="fas fa-plus-circle"></i>
@@ -48,27 +49,35 @@
                 <i class="fas fa-users"></i>
                 <span>Люди</span>
             </button>
+            <button class="menu-btn stats" onclick="showStats()">
+                <i class="fas fa-chart-pie"></i>
+                <span>Статистика</span>
+            </button>
+            <button class="menu-btn history" onclick="showAllTransactions()">
+                <i class="fas fa-history"></i>
+                <span>История</span>
+            </button>
         </div>
 
         <!-- Категории -->
         <section class="section">
             <div class="section-title">
                 <h2><i class="fas fa-folder-open"></i> Категории</h2>
-                <button class="icon-btn" onclick="openCategoryManage()"><i class="fas fa-edit"></i></button>
+                <button class="text-btn" onclick="openCategoriesModal()">Управлять</button>
             </div>
             <div class="categories-list" id="categories-list">
-                <!-- Загрузятся через JS -->
+                <!-- Загрузится через JS -->
             </div>
         </section>
 
         <!-- История -->
         <section class="section">
             <div class="section-title">
-                <h2><i class="fas fa-history"></i> Последние операции</h2>
+                <h2><i class="fas fa-receipt"></i> Последние операции</h2>
                 <button class="text-btn" onclick="showAllTransactions()">Все</button>
             </div>
             <div class="transactions" id="transactions">
-                <!-- Загрузятся через JS -->
+                <!-- Загрузится через JS -->
             </div>
         </section>
 
@@ -78,7 +87,7 @@
         </button>
     </div>
 
-    <!-- Модальное окно дохода -->
+    <!-- Модальные окна -->
     <div class="modal" id="income-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -88,25 +97,17 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label>Сумма (₽)</label>
-                    <input type="number" id="income-amount" placeholder="1000" min="1" step="100" class="form-input">
+                    <input type="number" id="income-amount" placeholder="10000" min="1" class="form-input">
                 </div>
                 <div class="form-group">
                     <label>Описание</label>
-                    <input type="text" id="income-description" placeholder="Зарплата, подарок..." class="form-input">
-                </div>
-                <div class="form-group">
-                    <label>Период</label>
-                    <select id="income-period" class="form-select">
-                        <option value="one-time">Разовый</option>
-                        <option value="day">За день</option>
-                        <option value="month">За месяц</option>
-                    </select>
+                    <input type="text" id="income-description" placeholder="Зарплата, аванс..." class="form-input">
                 </div>
                 <div class="form-group">
                     <label>Распределить по</label>
-                    <select id="income-distribute" class="form-select">
-                        <option value="all">Всем категориям равномерно</option>
-                        <option value="template">По шаблону %</option>
+                    <select id="income-distribution" class="form-select" onchange="toggleCategorySelect()">
+                        <option value="all">Всем категориям поровну</option>
+                        <option value="percent">По процентам (шаблон)</option>
                         <option value="specific">В конкретную категорию</option>
                     </select>
                 </div>
@@ -115,12 +116,13 @@
                         <!-- Заполнится через JS -->
                     </select>
                 </div>
-                <button class="btn btn-primary btn-block" onclick="addIncome()">Добавить доход</button>
+                <button class="btn btn-primary btn-block" onclick="addIncome()">
+                    <i class="fas fa-check-circle"></i> Добавить доход
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Модальное окно расхода -->
     <div class="modal" id="expense-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -130,11 +132,11 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label>Сумма (₽)</label>
-                    <input type="number" id="expense-amount" placeholder="500" min="1" step="100" class="form-input">
+                    <input type="number" id="expense-amount" placeholder="5000" min="1" class="form-input">
                 </div>
                 <div class="form-group">
                     <label>Описание</label>
-                    <input type="text" id="expense-description" placeholder="Еда, транспорт..." class="form-input">
+                    <input type="text" id="expense-description" placeholder="Продукты, бензин..." class="form-input">
                 </div>
                 <div class="form-group">
                     <label>Категория</label>
@@ -145,17 +147,18 @@
                 <div class="form-group">
                     <label>Взять деньги из</label>
                     <select id="expense-source" class="form-select">
-                        <option value="specific">Только этой категории</option>
-                        <option value="all">Всех категорий поровну</option>
+                        <option value="specific">Только из этой категории</option>
+                        <option value="all">Со всех категорий поровну</option>
                     </select>
                 </div>
                 <div class="alert" id="expense-alert" style="display: none;"></div>
-                <button class="btn btn-danger btn-block" onclick="addExpense()">Добавить расход</button>
+                <button class="btn btn-danger btn-block" onclick="addExpense()">
+                    <i class="fas fa-check-circle"></i> Добавить расход
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Модальное окно категорий -->
     <div class="modal" id="categories-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -171,21 +174,21 @@
                     <div class="input-group">
                         <input type="text" id="new-category-name" placeholder="Название категории" class="form-input">
                         <input type="color" id="new-category-color" value="#4361ee" class="form-color">
-                        <button class="btn btn-secondary" onclick="addCategory()"><i class="fas fa-plus"></i></button>
+                        <button class="btn btn-primary" onclick="addNewCategory()">
+                            <i class="fas fa-plus"></i>
+                        </button>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Проценты распределения (всего должно быть 100%)</label>
-                    <div id="percent-manage">
-                        <!-- Проценты категорий -->
-                    </div>
-                    <button class="btn btn-primary btn-block" onclick="savePercentages()">Сохранить проценты</button>
+                <div class="percent-manager" id="percent-manager">
+                    <!-- Проценты -->
                 </div>
+                <button class="btn btn-primary btn-block" onclick="savePercentages()">
+                    <i class="fas fa-save"></i> Сохранить проценты
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Модальное окно людей -->
     <div class="modal" id="users-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -200,12 +203,14 @@
                     <label>Добавить по @username</label>
                     <div class="input-group">
                         <input type="text" id="new-username" placeholder="@username" class="form-input">
-                        <button class="btn btn-primary" onclick="addUser()">Добавить</button>
+                        <button class="btn btn-primary" onclick="addNewUser()">
+                            <i class="fas fa-user-plus"></i> Добавить
+                        </button>
                     </div>
                 </div>
                 <div class="info-box">
                     <i class="fas fa-info-circle"></i>
-                    <p>Добавленные пользователи смогут видеть балансы и добавлять операции</p>
+                    <p>Добавленные пользователи смогут видеть балансы и добавлять операции. Для добавления нужно знать @username пользователя в Telegram.</p>
                 </div>
             </div>
         </div>
