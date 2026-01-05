@@ -13,9 +13,48 @@ function initData() {
                 { category: "Продукты", percent: 25, person: "Таня" },
                 { category: "Машина", percent: 20, person: "Саша" }
             ],
-            transactions: []
+            transactions: [],
+            sharedAccess: {
+                enabled: false,
+                partnerId: null,
+                lastSync: null
+            },
+            settings: {
+                notifications: true,
+                currency: '₽',
+                monthlyReset: false
+            },
+            userInfo: {
+                telegramId: null,
+                name: 'Пользователь'
+            }
         };
         localStorage.setItem('financeData', JSON.stringify(defaultData));
+    }
+    
+    // Получаем данные Telegram пользователя
+    initTelegramUser();
+}
+
+// Инициализация пользователя Telegram
+function initTelegramUser() {
+    let data = getData();
+    
+    if (typeof Telegram !== 'undefined') {
+        const tg = window.Telegram.WebApp;
+        const user = tg.initDataUnsafe?.user;
+        
+        if (user) {
+            data.userInfo.telegramId = user.id;
+            data.userInfo.name = user.first_name || 'Пользователь';
+            
+            // Если у нас есть доступ к партнеру, проверяем синхронизацию
+            if (data.sharedAccess.enabled && data.sharedAccess.partnerId) {
+                checkPartnerSync();
+            }
+            
+            saveData(data);
+        }
     }
 }
 
