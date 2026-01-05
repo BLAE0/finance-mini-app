@@ -1,95 +1,131 @@
-// Финансовый помощник - APP
-// ВСЁ РАБОТАЕТ!
+// Основная логика приложения
 
-// ===== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ =====
-let currentPeriod = 'month';
+// ===== ОБНОВЛЕНИЕ UI =====
+function updateUI() {
+    updateBalance();
+    updateCategories();
+    updateTransactions();
+}
 
-// ===== ИНИЦИАЛИЗАЦИЯ =====
-document.addEventListener('DOMContentLoaded', function() {
-    // Инициализируем приложение
-    initApp();
+function updateBalance() {
+    document.getElementById('total-balance').textContent = 
+        `${Math.round(financeData.totalBalance)} ₽`;
+}
+
+function updateCategories() {
+    const container = document.getElementById('categories-list');
+    container.innerHTML = '';
     
-    // Настраиваем Telegram
-    if (typeof Telegram !== 'undefined') {
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
-        tg.enableClosingConfirmation();
+    financeData.categories.forEach(cat => {
+        const item = document.createElement('div');
+        item.className = 'category-item';
+        item.style.borderLeftColor = cat.color;
+        item.onclick = () => openCategoryExpense(cat.id);
         
-        // Темная тема
-        if (tg.colorScheme === 'dark') {
-            document.body.classList.add('dark-theme');
-        }
-        
-        tg.onEvent('themeChanged', function() {
-            document.body.classList.toggle('dark-theme', tg.colorScheme === 'dark');
-        });
+        item.innerHTML = `
+            <div class="category-icon" style="background: ${cat.color}">
+                <i class="${cat.icon}"></i>
+            </div>
+            <div class="category-info">
+                <div class="category-name">${cat.name}</div>
+                <div class="category-percent">${cat.percent}% от дохода</div>
+            </div>
+            <div class="category-balance">${Math.round(cat.balance)} ₽</div>
+        `;
+        container.appendChild(item);
+    });
+}
+
+function updateTransactions() {
+    const container = document.getElementById('transactions');
+    container.innerHTML = '';
+    
+    const recent = financeData.transactions.slice(-5).reverse();
+    
+    if (recent.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-receipt"></i>
+                <p>Нет операций</p>
+            </div>
+        `;
+        return;
     }
     
-    // Обновляем UI
-    updateAllUI();
-});
+    recent.forEach(trans => {
+        const item = document.createElement('div');
+        item.className = 'transaction-item';
+        
+        const isIncome = trans.type === 'income';
+        const category = financeData.categories.find(c => c.id === trans.categoryId);
+        const color = isIncome ? '#10b981' : (category?.color || '#ef4444');
+        const icon = isIncome ? 'fas fa-plus-circle' : 'fas fa-minus-circle';
+        
+        const date = new Date(trans.date);
+        const time = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        
+        item.innerHTML = `
+            <div class="transaction-icon" style="background: ${color}">
+                <i class="${icon}"></i>
+            </div>
+            <div class="transaction-details">
+                <div class="transaction-title">${trans.description}</div>
+                <div class="transaction-info">
+                    <span>${category ? category.name : (isIncome ? 'Доход' : 'Расход')}</span>
+                    <span>•</span>
+                    <span>${time}</span>
+                </div>
+            </div>
+            <div class="transaction-amount ${isIncome ? 'income' : 'expense'}">
+                ${isIncome ? '+' : '-'}${Math.round(trans.amount)} ₽
+            </div>
+        `;
+        container.appendChild(item);
+    });
+}
 
 // ===== ПЕРИОДЫ =====
 function setPeriod(period) {
-    currentPeriod = period;
-    
-    // Обновляем кнопки
     document.querySelectorAll('.period-tab').forEach(tab => {
         tab.classList.remove('active');
         if (tab.textContent.toLowerCase().includes(period)) {
             tab.classList.add('active');
         }
     });
-    
-    // Обновляем транзакции
-    updateTransactionsUI();
+    financeData.period = period;
+    updateTransactions();
 }
 
 // ===== МОДАЛЬНЫЕ ОКНА =====
-function openModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-        
-        // Если это модалка категорий - обновляем список
-        if (modalId === 'categories-modal') {
-            updateCategoriesManage();
-            updatePercentManager();
-        }
-        
-        // Если это модалка пользователей - обновляем список
-        if (modalId === 'users-modal') {
-            updateUsersList();
-        }
-        
-        // Если это модалка дохода/расхода - обновляем категории
-        if (modalId === 'income-modal' || modalId === 'expense-modal') {
-            updateCategorySelects();
-        }
+function openModal(id) {
+    document.getElementById(id).style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    
+    if (id === 'income-modal' || id === 'expense-modal') {
+        updateCategorySelects();
+    }
+    if (id === 'categories-modal') {
+        updateCategoriesManage();
+        updatePercentManager();
+    }
+    if (id === 'users-modal') {
+        updateUsersList();
     }
 }
 
-function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto';
-        
-        // Очищаем поля
-        if (modalId === 'income-modal') {
-            document.getElementById('income-amount').value = '';
-            document.getElementById('income-description').value = '';
-            document.getElementById('income-distribute').value = 'all';
-            document.getElementById('category-select-container').style.display = 'none';
-        }
-        
-        if (modalId === 'expense-modal') {
-            document.getElementById('expense-amount').value = '';
-            document.getElementById('expense-description').value = '';
-            document.getElementById('expense-alert').style.display = 'none';
-        }
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+    document.body.style.overflow = 'auto';
+    
+    if (id === 'income-modal') {
+        document.getElementById('income-amount').value = '';
+        document.getElementById('income-description').value = '';
+        document.getElementById('category-select-container').style.display = 'none';
+    }
+    if (id === 'expense-modal') {
+        document.getElementById('expense-amount').value = '';
+        document.getElementById('expense-description').value = '';
+        document.getElementById('expense-alert').style.display = 'none';
     }
 }
 
@@ -100,7 +136,7 @@ function closeAllModals() {
     document.body.style.overflow = 'auto';
 }
 
-// Закрытие по клику на оверлей и ESC
+// Закрытие по клику и ESC
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('modal')) {
         closeAllModals();
@@ -113,174 +149,208 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// ===== ОТКРЫТИЕ МОДАЛОК =====
-function openIncomeModal() {
-    openModal('income-modal');
-}
-
-function openExpenseModal() {
-    openModal('expense-modal');
-}
-
-function openCategoriesModal() {
-    openModal('categories-modal');
-}
-
-function openUsersModal() {
-    openModal('users-modal');
-}
-
-function openCategoryManage() {
-    openModal('categories-modal');
-}
-
-function showAllTransactions() {
-    alert('В полной версии будет список всех транзакций');
-}
-
-function openCategoryExpense(categoryId) {
-    const category = getCategory(categoryId);
-    if (category) {
-        openExpenseModal();
-        setTimeout(() => {
-            document.getElementById('expense-category').value = categoryId;
-            document.getElementById('expense-source').value = 'specific';
-        }, 100);
-    }
-}
-
 // ===== ДОХОДЫ =====
 function updateCategorySelects() {
     const incomeSelect = document.getElementById('income-category');
     const expenseSelect = document.getElementById('expense-category');
     
-    if (incomeSelect) {
-        incomeSelect.innerHTML = '<option value="">Выберите категорию</option>';
-        getCategories().forEach(category => {
-            incomeSelect.innerHTML += `<option value="${category.id}">${category.name}</option>`;
-        });
-    }
+    incomeSelect.innerHTML = '<option value="">Выберите категорию</option>';
+    expenseSelect.innerHTML = '<option value="">Выберите категорию</option>';
     
-    if (expenseSelect) {
-        expenseSelect.innerHTML = '<option value="">Выберите категорию</option>';
-        getCategories().forEach(category => {
-            expenseSelect.innerHTML += `<option value="${category.id}">${category.name}</option>`;
-        });
-    }
-    
-    // Слушатель для распределения дохода
-    const distributeSelect = document.getElementById('income-distribute');
-    if (distributeSelect) {
-        distributeSelect.addEventListener('change', function() {
-            const container = document.getElementById('category-select-container');
-            container.style.display = this.value === 'specific' ? 'block' : 'none';
-        });
-    }
+    financeData.categories.forEach(cat => {
+        incomeSelect.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+        expenseSelect.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+    });
+}
+
+function toggleCategorySelect() {
+    const select = document.getElementById('income-distribution').value;
+    const container = document.getElementById('category-select-container');
+    container.style.display = select === 'specific' ? 'block' : 'none';
 }
 
 function addIncome() {
-    const amount = document.getElementById('income-amount').value;
-    const description = document.getElementById('income-description').value;
-    const period = document.getElementById('income-period').value;
-    const distributeType = document.getElementById('income-distribute').value;
-    const categoryId = distributeType === 'specific' ? 
-        document.getElementById('income-category').value : null;
+    const amount = parseFloat(document.getElementById('income-amount').value);
+    const description = document.getElementById('income-description').value.trim() || 'Доход';
+    const distribution = document.getElementById('income-distribution').value;
+    const categoryId = distribution === 'specific' ? 
+        parseInt(document.getElementById('income-category').value) : null;
     
-    const result = addIncome(amount, description, period, distributeType, categoryId);
-    
-    if (result.success) {
-        showNotification(result.message, 'success');
-        closeModal('income-modal');
-        updateAllUI();
-    } else {
-        showNotification(result.message, 'error');
+    if (!amount || amount <= 0) {
+        showNotification('Введите корректную сумму', 'error');
+        return;
     }
+    
+    // Обновляем общий баланс
+    financeData.totalBalance += amount;
+    
+    // Распределяем по категориям
+    if (distribution === 'specific' && categoryId) {
+        const category = financeData.categories.find(c => c.id === categoryId);
+        if (category) {
+            category.balance += amount;
+        }
+    } else if (distribution === 'percent') {
+        // По процентам
+        financeData.categories.forEach(cat => {
+            cat.balance += (amount * cat.percent) / 100;
+        });
+    } else {
+        // Поровну
+        const share = amount / financeData.categories.length;
+        financeData.categories.forEach(cat => {
+            cat.balance += share;
+        });
+    }
+    
+    // Добавляем транзакцию
+    financeData.transactions.push({
+        id: Date.now(),
+        type: 'income',
+        amount: amount,
+        description: description,
+        date: new Date().toISOString(),
+        categoryId: categoryId,
+        distribution: distribution
+    });
+    
+    saveData();
+    updateUI();
+    closeModal('income-modal');
+    showNotification(`Доход ${amount}₽ добавлен!`, 'success');
 }
 
 // ===== РАСХОДЫ =====
 function addExpense() {
-    const amount = document.getElementById('expense-amount').value;
-    const description = document.getElementById('expense-description').value;
-    const categoryId = document.getElementById('expense-category').value;
+    const amount = parseFloat(document.getElementById('expense-amount').value);
+    const description = document.getElementById('expense-description').value.trim() || 'Расход';
+    const categoryId = parseInt(document.getElementById('expense-category').value);
     const sourceType = document.getElementById('expense-source').value;
     
-    if (!categoryId && sourceType === 'specific') {
+    if (!amount || amount <= 0) {
+        showNotification('Введите корректную сумму', 'error');
+        return;
+    }
+    
+    if (!categoryId) {
         showNotification('Выберите категорию', 'error');
         return;
     }
     
-    const result = addExpense(amount, description, categoryId, sourceType);
-    
-    if (result.success) {
-        showNotification(result.message, 'success');
-        closeModal('expense-modal');
-        updateAllUI();
-    } else {
-        const alertEl = document.getElementById('expense-alert');
-        alertEl.textContent = result.message;
-        alertEl.className = 'alert error';
-        alertEl.style.display = 'block';
+    const category = financeData.categories.find(c => c.id === categoryId);
+    if (!category) {
+        showNotification('Категория не найдена', 'error');
+        return;
     }
+    
+    if (sourceType === 'specific') {
+        // Из конкретной категории
+        if (category.balance < amount) {
+            showNotification(`Недостаточно средств в категории "${category.name}"! Доступно: ${Math.round(category.balance)}₽`, 'error');
+            return;
+        }
+        category.balance -= amount;
+    } else {
+        // Со всех категорий поровну
+        const totalAvailable = financeData.categories.reduce((sum, cat) => sum + cat.balance, 0);
+        if (totalAvailable < amount) {
+            showNotification(`Недостаточно средств во всех категориях! Доступно: ${Math.round(totalAvailable)}₽`, 'error');
+            return;
+        }
+        
+        const share = amount / financeData.categories.length;
+        financeData.categories.forEach(cat => {
+            cat.balance = Math.max(0, cat.balance - share);
+        });
+    }
+    
+    // Обновляем общий баланс
+    financeData.totalBalance -= amount;
+    
+    // Добавляем транзакцию
+    financeData.transactions.push({
+        id: Date.now(),
+        type: 'expense',
+        amount: amount,
+        description: description,
+        date: new Date().toISOString(),
+        categoryId: categoryId,
+        sourceType: sourceType
+    });
+    
+    saveData();
+    updateUI();
+    closeModal('expense-modal');
+    showNotification(`Расход ${amount}₽ добавлен!`, 'success');
+}
+
+function openCategoryExpense(categoryId) {
+    openModal('expense-modal');
+    setTimeout(() => {
+        document.getElementById('expense-category').value = categoryId;
+        document.getElementById('expense-source').value = 'specific';
+    }, 100);
 }
 
 // ===== КАТЕГОРИИ =====
 function updateCategoriesManage() {
     const container = document.getElementById('categories-manage');
-    if (!container) return;
-    
     container.innerHTML = '';
     
-    getCategories().forEach(category => {
+    financeData.categories.forEach(cat => {
         const item = document.createElement('div');
         item.className = 'category-manage-item';
         
         item.innerHTML = `
-            <div class="category-manage-color" style="background: ${category.color}"></div>
-            <div class="category-manage-name">${category.name}</div>
-            <div class="category-balance">${Math.round(category.balance)} ₽</div>
-            <button class="category-manage-delete" onclick="deleteCategoryConfirm(${category.id})">
+            <div class="category-manage-color" style="background: ${cat.color}"></div>
+            <div class="category-manage-name">${cat.name}</div>
+            <div class="category-manage-balance">${Math.round(cat.balance)} ₽</div>
+            <button class="category-manage-delete" onclick="deleteCategory(${cat.id})">
                 <i class="fas fa-trash"></i>
             </button>
         `;
-        
         container.appendChild(item);
     });
 }
 
 function updatePercentManager() {
-    const container = document.getElementById('percent-manage');
-    if (!container) return;
+    const container = document.getElementById('percent-manager');
+    container.innerHTML = '<h4>Проценты распределения (всего должно быть 100%)</h4>';
     
-    container.innerHTML = '';
-    
-    const categories = getCategories();
     let totalPercent = 0;
     
-    categories.forEach(category => {
+    financeData.categories.forEach(cat => {
         const item = document.createElement('div');
         item.className = 'percent-item';
         
         item.innerHTML = `
-            <div class="percent-name">${category.name}</div>
+            <div class="percent-name">${cat.name}</div>
             <input type="number" 
                    class="percent-input" 
-                   value="${category.percent}" 
+                   value="${cat.percent}" 
                    min="0" 
                    max="100"
-                   onchange="updateCategoryPercent(${category.id}, this.value)"
-                   oninput="updatePercentTotal()">
+                   oninput="updateCategoryPercent(${cat.id}, this.value); updatePercentTotal()">
             <span>%</span>
         `;
-        
         container.appendChild(item);
-        totalPercent += category.percent;
+        totalPercent += cat.percent;
     });
     
-    // Итог
     const totalEl = document.createElement('div');
     totalEl.className = 'percent-total';
-    totalEl.innerHTML = `Всего: <span id="percent-total">${totalPercent}</span>%`;
+    totalEl.id = 'percent-total';
+    totalEl.innerHTML = `Всего: <span>${totalPercent}</span>%`;
     container.appendChild(totalEl);
+    updatePercentTotal();
+}
+
+function updateCategoryPercent(categoryId, percent) {
+    const category = financeData.categories.find(c => c.id === categoryId);
+    if (category) {
+        category.percent = parseInt(percent) || 0;
+        saveData();
+    }
 }
 
 function updatePercentTotal() {
@@ -288,24 +358,28 @@ function updatePercentTotal() {
     let total = 0;
     
     inputs.forEach(input => {
-        total += Number(input.value) || 0;
+        total += parseInt(input.value) || 0;
     });
     
     const totalEl = document.getElementById('percent-total');
     if (totalEl) {
-        totalEl.textContent = total;
+        const span = totalEl.querySelector('span');
+        span.textContent = total;
         
         if (total === 100) {
             totalEl.style.color = '#10b981';
+            totalEl.style.borderColor = '#10b981';
         } else if (total > 100) {
             totalEl.style.color = '#ef4444';
+            totalEl.style.borderColor = '#ef4444';
         } else {
             totalEl.style.color = '#f59e0b';
+            totalEl.style.borderColor = '#f59e0b';
         }
     }
 }
 
-function addCategory() {
+function addNewCategory() {
     const nameInput = document.getElementById('new-category-name');
     const colorInput = document.getElementById('new-category-color');
     
@@ -317,59 +391,68 @@ function addCategory() {
         return;
     }
     
-    addCategory(name, color);
+    const newCategory = {
+        id: Date.now(),
+        name: name,
+        color: color,
+        icon: 'fas fa-tag',
+        balance: 0,
+        percent: 0
+    };
+    
+    financeData.categories.push(newCategory);
+    saveData();
+    
     nameInput.value = '';
     colorInput.value = '#4361ee';
     
-    showNotification(`Категория "${name}" добавлена`, 'success');
+    updateCategories();
     updateCategoriesManage();
     updatePercentManager();
     updateCategorySelects();
+    
+    showNotification(`Категория "${name}" добавлена`, 'success');
+}
+
+function deleteCategory(categoryId) {
+    const category = financeData.categories.find(c => c.id === categoryId);
+    if (!category) return;
+    
+    if (category.balance > 0) {
+        if (!confirm(`В категории "${category.name}" есть ${Math.round(category.balance)}₽. Удалить всё равно?`)) {
+            return;
+        }
+        financeData.totalBalance -= category.balance;
+    }
+    
+    financeData.categories = financeData.categories.filter(c => c.id !== categoryId);
+    saveData();
+    
+    updateCategories();
+    updateCategoriesManage();
+    updatePercentManager();
+    updateCategorySelects();
+    
+    showNotification(`Категория "${category.name}" удалена`, 'success');
 }
 
 function savePercentages() {
-    const totalEl = document.getElementById('percent-total');
-    const total = parseInt(totalEl.textContent);
-    
+    const total = parseInt(document.querySelector('#percent-total span').textContent);
     if (total !== 100) {
         showNotification(`Сумма процентов должна быть 100% (сейчас ${total}%)`, 'error');
         return;
     }
     
-    const inputs = document.querySelectorAll('.percent-input');
-    inputs.forEach(input => {
-        const categoryId = parseInt(input.getAttribute('onchange').match(/\d+/)[0]);
-        updateCategoryPercent(categoryId, parseInt(input.value));
-    });
-    
+    saveData();
     showNotification('Проценты сохранены', 'success');
-}
-
-function deleteCategoryConfirm(categoryId) {
-    const category = getCategory(categoryId);
-    if (!category) return;
-    
-    if (confirm(`Удалить категорию "${category.name}"?`)) {
-        if (deleteCategory(categoryId)) {
-            showNotification(`Категория "${category.name}" удалена`, 'success');
-            updateCategoriesManage();
-            updatePercentManager();
-            updateCategorySelects();
-            updateCategoriesUI();
-        }
-    }
 }
 
 // ===== ПОЛЬЗОВАТЕЛИ =====
 function updateUsersList() {
     const container = document.getElementById('users-list');
-    if (!container) return;
-    
     container.innerHTML = '';
     
-    const users = getUsers();
-    
-    if (users.length === 0) {
+    if (financeData.users.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-users"></i>
@@ -379,27 +462,27 @@ function updateUsersList() {
         return;
     }
     
-    users.forEach(user => {
+    financeData.users.forEach(user => {
         const item = document.createElement('div');
         item.className = 'user-item';
         
-        // Первая буква имени для аватара
-        const firstLetter = user.firstName.charAt(0).toUpperCase();
+        const firstLetter = user.username ? user.username.charAt(1).toUpperCase() : '?';
         
         item.innerHTML = `
             <div class="user-avatar">${firstLetter}</div>
-            <div class="user-name">${user.firstName}</div>
-            <div class="user-username">${user.username}</div>
-            <button class="user-delete" onclick="removeUserConfirm(${user.id})">
+            <div class="user-info-text">
+                <div class="user-name">${user.username}</div>
+                <div class="user-username">Добавлен: ${new Date(user.addedAt).toLocaleDateString()}</div>
+            </div>
+            <button class="user-delete" onclick="removeUser(${user.id})">
                 <i class="fas fa-times"></i>
             </button>
         `;
-        
         container.appendChild(item);
     });
 }
 
-function addUser() {
+function addNewUser() {
     const input = document.getElementById('new-username');
     const username = input.value.trim();
     
@@ -408,27 +491,59 @@ function addUser() {
         return;
     }
     
-    // Добавляем @ если его нет
-    const formattedUsername = username.startsWith('@') ? username : '@' + username;
-    
-    const result = addUser(formattedUsername);
-    
-    if (result.success) {
-        showNotification(`Пользователь ${formattedUsername} добавлен`, 'success');
-        input.value = '';
-        updateUsersList();
-    } else {
-        showNotification(result.message, 'error');
+    if (!username.startsWith('@')) {
+        showNotification('Username должен начинаться с @', 'error');
+        return;
     }
+    
+    if (financeData.users.some(u => u.username === username)) {
+        showNotification('Этот пользователь уже добавлен', 'error');
+        return;
+    }
+    
+    const newUser = {
+        id: Date.now(),
+        username: username,
+        addedAt: new Date().toISOString()
+    };
+    
+    financeData.users.push(newUser);
+    saveData();
+    
+    input.value = '';
+    updateUsersList();
+    
+    showNotification(`Пользователь ${username} добавлен`, 'success');
 }
 
-function removeUserConfirm(userId) {
-    if (confirm('Удалить пользователя?')) {
-        if (removeUser(userId)) {
-            showNotification('Пользователь удален', 'success');
-            updateUsersList();
-        }
+function removeUser(userId) {
+    financeData.users = financeData.users.filter(u => u.id !== userId);
+    saveData();
+    updateUsersList();
+    showNotification('Пользователь удален', 'success');
+}
+
+// ===== ДРУГИЕ ФУНКЦИИ =====
+function showStats() {
+    alert('Статистика будет в следующем обновлении!');
+}
+
+function showAllTransactions() {
+    if (financeData.transactions.length === 0) {
+        alert('Нет операций для отображения');
+        return;
     }
+    
+    let message = 'ВСЕ ОПЕРАЦИИ:\n\n';
+    financeData.transactions.reverse().forEach((trans, i) => {
+        const date = new Date(trans.date);
+        const dateStr = date.toLocaleDateString('ru-RU');
+        const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        const type = trans.type === 'income' ? 'ДОХОД' : 'РАСХОД';
+        const sign = trans.type === 'income' ? '+' : '-';
+        message += `${i+1}. ${dateStr} ${timeStr} - ${trans.description}\n   ${type}: ${sign}${Math.round(trans.amount)}₽\n\n`;
+    });
+    alert(message);
 }
 
 // ===== УВЕДОМЛЕНИЯ =====
@@ -438,7 +553,6 @@ function showNotification(message, type = 'info') {
         return;
     }
     
-    // Создаем свое уведомление
     const notification = document.createElement('div');
     notification.className = 'notification';
     notification.style.cssText = `
@@ -451,9 +565,9 @@ function showNotification(message, type = 'info') {
         padding: 12px 24px;
         border-radius: 12px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        z-index: 3000;
+        z-index: 2000;
         animation: slideDown 0.3s ease;
-        font-weight: 500;
+        font-weight: 600;
         max-width: 90%;
         text-align: center;
     `;
@@ -479,48 +593,10 @@ style.textContent = `
         from { transform: translate(-50%, 0); opacity: 1; }
         to { transform: translate(-50%, -100%); opacity: 0; }
     }
-    
-    .dark-theme {
-        background: #0f172a;
-        color: #e2e8f0;
-    }
-    
-    .dark-theme .app {
-        background: #0f172a;
-    }
-    
-    .dark-theme .section,
-    .dark-theme .category-item,
-    .dark-theme .transaction-item,
-    .dark-theme .modal-content {
-        background: #1e293b;
-        color: #e2e8f0;
-        border-color: #334155;
-    }
-    
-    .dark-theme .quick-menu {
-        background: #1e293b;
-        border-color: #334155;
-    }
-    
-    .dark-theme .menu-btn {
-        color: #cbd5e1;
-    }
-    
-    .dark-theme .form-input,
-    .dark-theme .form-select {
-        background: #334155;
-        border-color: #475569;
-        color: #e2e8f0;
-    }
-    
-    .dark-theme .form-input::placeholder {
-        color: #94a3b8;
-    }
-    
-    .dark-theme .category-manage-item,
-    .dark-theme .user-item {
-        background: #334155;
-    }
 `;
 document.head.appendChild(style);
+
+// ===== ИНИЦИАЛИЗАЦИЯ =====
+document.addEventListener('DOMContentLoaded', function() {
+    updateUI();
+});
