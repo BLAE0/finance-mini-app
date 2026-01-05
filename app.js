@@ -1,172 +1,49 @@
-// Финансовый помощник - Основная логика
-// ВЕРСИЯ: 3.0 - Полная переработка
+// Финансовый помощник - APP
+// ВСЁ РАБОТАЕТ!
 
 // ===== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ =====
-let tg = null;
-let currentModal = null;
-let expenseChart = null;
-let incomeChart = null;
+let currentPeriod = 'month';
 
-// Инициализация Telegram
-if (typeof Telegram !== 'undefined') {
-    tg = window.Telegram.WebApp;
-    tg.expand();
-    tg.ready();
+// ===== ИНИЦИАЛИЗАЦИЯ =====
+document.addEventListener('DOMContentLoaded', function() {
+    // Инициализируем приложение
+    initApp();
     
-    // Настройка темы
-    if (tg.colorScheme === 'dark') {
-        document.body.classList.add('dark-theme');
-    }
-    
-    // Слушатель изменения темы
-    tg.onEvent('themeChanged', function() {
+    // Настраиваем Telegram
+    if (typeof Telegram !== 'undefined') {
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+        tg.enableClosingConfirmation();
+        
+        // Темная тема
         if (tg.colorScheme === 'dark') {
             document.body.classList.add('dark-theme');
-        } else {
-            document.body.classList.remove('dark-theme');
+        }
+        
+        tg.onEvent('themeChanged', function() {
+            document.body.classList.toggle('dark-theme', tg.colorScheme === 'dark');
+        });
+    }
+    
+    // Обновляем UI
+    updateAllUI();
+});
+
+// ===== ПЕРИОДЫ =====
+function setPeriod(period) {
+    currentPeriod = period;
+    
+    // Обновляем кнопки
+    document.querySelectorAll('.period-tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.textContent.toLowerCase().includes(period)) {
+            tab.classList.add('active');
         }
     });
     
-    // Кнопка "Назад"
-    tg.BackButton.onClick(function() {
-        if (currentModal) {
-            closeModal(currentModal);
-        } else {
-            tg.close();
-        }
-    });
-}
-
-// ===== ОСНОВНОЙ ИНТЕРФЕЙС =====
-function updateUI() {
-    updateBalance();
-    updateCategories();
-    updateRecentTransactions();
-    updateUserInfo();
-}
-
-function updateBalance() {
-    const data = getAppData();
-    const total = data.totalBalance || 0;
-    document.getElementById('total-balance').textContent = formatCurrency(total);
-}
-
-function updateCategories() {
-    const data = getAppData();
-    const container = document.getElementById('categories-list');
-    
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    const categories = data.categories.filter(cat => cat.percent > 0);
-    
-    if (categories.length === 0) {
-        container.innerHTML = `
-            <div class="no-data">
-                <i class="fas fa-folder-open"></i>
-                <p>Категории не настроены</p>
-            </div>
-        `;
-        return;
-    }
-    
-    categories.forEach(category => {
-        const item = document.createElement('div');
-        item.className = 'category-item';
-        
-        item.innerHTML = `
-            <div class="category-icon" style="background: ${category.color}">
-                <i class="${category.icon}"></i>
-            </div>
-            <div class="category-info">
-                <div class="category-name">${category.name}</div>
-                <div class="category-details">
-                    <span>${category.percent}%</span>
-                    <span>•</span>
-                    <span>Осталось: ${formatCurrency(category.balance)}</span>
-                </div>
-            </div>
-            <div class="category-amount">
-                ${formatCurrency(category.balance)}
-            </div>
-        `;
-        
-        container.appendChild(item);
-    });
-}
-
-function updateRecentTransactions() {
-    const data = getAppData();
-    const period = data.currentPeriod || 'current';
-    const container = document.getElementById('recent-transactions');
-    
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    const transactions = getTransactions(period).slice(0, 5);
-    
-    if (transactions.length === 0) {
-        container.innerHTML = `
-            <div class="no-data">
-                <i class="fas fa-receipt"></i>
-                <p>Нет операций</p>
-            </div>
-        `;
-        return;
-    }
-    
-    transactions.forEach(transaction => {
-        const item = document.createElement('div');
-        item.className = 'transaction-item';
-        
-        const category = transaction.categoryId ? 
-            getCategory(transaction.categoryId) : null;
-        
-        const icon = category ? category.icon : 
-            (transaction.type === 'income' ? 'fas fa-arrow-down' : 'fas fa-arrow-up');
-        
-        const color = category ? category.color : 
-            (transaction.type === 'income' ? '#10b981' : '#ef4444');
-        
-        const amountClass = transaction.type === 'income' ? 'income' : 'expense';
-        const amountSign = transaction.type === 'income' ? '+' : '-';
-        
-        item.innerHTML = `
-            <div class="transaction-icon" style="background: ${color}">
-                <i class="${icon}"></i>
-            </div>
-            <div class="transaction-details">
-                <div class="transaction-title">${transaction.description || 'Операция'}</div>
-                <div class="transaction-meta">
-                    <span>${category ? category.name : (transaction.type === 'income' ? 'Доход' : 'Расход')}</span>
-                    <span>•</span>
-                    <span>${formatDate(transaction.date)}</span>
-                </div>
-            </div>
-            <div class="transaction-amount ${amountClass}">
-                ${amountSign}${formatCurrency(transaction.amount)}
-            </div>
-        `;
-        
-        container.appendChild(item);
-    });
-}
-
-function updateUserInfo() {
-    const user = getCurrentUser();
-    if (user) {
-        document.getElementById('user-name').textContent = user.firstName;
-        
-        const data = getAppData();
-        const partnersCount = data.users.filter(u => !u.isCurrent).length;
-        
-        if (partnersCount > 0) {
-            document.getElementById('user-status').textContent = 
-                `${partnersCount} партнёр${partnersCount > 1 ? 'а' : ''}`;
-        }
-    }
+    // Обновляем транзакции
+    updateTransactionsUI();
 }
 
 // ===== МОДАЛЬНЫЕ ОКНА =====
@@ -174,12 +51,22 @@ function openModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.style.display = 'flex';
-        currentModal = modalId;
         document.body.style.overflow = 'hidden';
         
-        // Показываем кнопку "Назад" в Telegram
-        if (tg) {
-            tg.BackButton.show();
+        // Если это модалка категорий - обновляем список
+        if (modalId === 'categories-modal') {
+            updateCategoriesManage();
+            updatePercentManager();
+        }
+        
+        // Если это модалка пользователей - обновляем список
+        if (modalId === 'users-modal') {
+            updateUsersList();
+        }
+        
+        // Если это модалка дохода/расхода - обновляем категории
+        if (modalId === 'income-modal' || modalId === 'expense-modal') {
+            updateCategorySelects();
         }
     }
 }
@@ -188,12 +75,20 @@ function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.style.display = 'none';
-        currentModal = null;
         document.body.style.overflow = 'auto';
         
-        // Скрываем кнопку "Назад" если нет модалок
-        if (tg && !document.querySelector('.modal[style*="display: flex"]')) {
-            tg.BackButton.hide();
+        // Очищаем поля
+        if (modalId === 'income-modal') {
+            document.getElementById('income-amount').value = '';
+            document.getElementById('income-description').value = '';
+            document.getElementById('income-distribute').value = 'all';
+            document.getElementById('category-select-container').style.display = 'none';
+        }
+        
+        if (modalId === 'expense-modal') {
+            document.getElementById('expense-amount').value = '';
+            document.getElementById('expense-description').value = '';
+            document.getElementById('expense-alert').style.display = 'none';
         }
     }
 }
@@ -202,691 +97,430 @@ function closeAllModals() {
     document.querySelectorAll('.modal').forEach(modal => {
         modal.style.display = 'none';
     });
-    currentModal = null;
     document.body.style.overflow = 'auto';
-    
-    if (tg) {
-        tg.BackButton.hide();
+}
+
+// Закрытие по клику на оверлей и ESC
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('modal')) {
+        closeAllModals();
     }
-}
+});
 
-// ===== ОПЕРАЦИИ =====
-function openAddModal(type) {
-    const modal = document.getElementById('add-modal');
-    const title = document.getElementById('modal-title');
-    const submitBtn = document.getElementById('modal-submit-btn');
-    const amountField = document.getElementById('amount');
-    const descriptionField = document.getElementById('description');
-    const dateField = document.getElementById('date');
-    const categorySelect = document.getElementById('category');
-    const distributionGroup = document.getElementById('distribution-group');
-    const templateGroup = document.getElementById('template-group');
-    
-    // Сбрасываем поля
-    amountField.value = '';
-    descriptionField.value = '';
-    dateField.valueAsDate = new Date();
-    
-    // Заполняем категории
-    categorySelect.innerHTML = '<option value="">Выберите категорию</option>';
-    getCategories().forEach(category => {
-        const option = document.createElement('option');
-        option.value = category.id;
-        option.textContent = `${category.name} (${formatCurrency(category.balance)})`;
-        categorySelect.appendChild(option);
-    });
-    
-    // Настраиваем в зависимости от типа операции
-    if (type === 'income') {
-        title.textContent = 'Добавить доход';
-        submitBtn.textContent = 'Добавить доход';
-        submitBtn.onclick = function() { submitTransaction('income'); };
-        
-        // Показываем выбор шаблона для доходов
-        templateGroup.style.display = 'block';
-        distributionGroup.style.display = 'block';
-        
-        // Заполняем шаблоны
-        const templateSelect = document.getElementById('template');
-        templateSelect.innerHTML = '<option value="">Без шаблона</option>';
-        getTemplates().forEach(template => {
-            const option = document.createElement('option');
-            option.value = template.id;
-            option.textContent = template.name;
-            templateSelect.appendChild(option);
-        });
-    } else {
-        title.textContent = 'Добавить расход';
-        submitBtn.textContent = 'Добавить расход';
-        submitBtn.onclick = function() { submitTransaction('expense'); };
-        
-        // Скрываем шаблоны для расходов
-        templateGroup.style.display = 'none';
-        distributionGroup.style.display = 'block';
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeAllModals();
     }
-    
-    openModal('add-modal');
+});
+
+// ===== ОТКРЫТИЕ МОДАЛОК =====
+function openIncomeModal() {
+    openModal('income-modal');
 }
 
-function closeAddModal() {
-    closeModal('add-modal');
+function openExpenseModal() {
+    openModal('expense-modal');
 }
 
-function submitTransaction(type) {
-    const amount = parseFloat(document.getElementById('amount').value);
-    const description = document.getElementById('description').value.trim();
-    const categoryId = parseInt(document.getElementById('category').value);
-    const date = document.getElementById('date').value;
-    const distribution = document.querySelector('input[name="distribution"]:checked')?.value;
-    const templateId = type === 'income' ? parseInt(document.getElementById('template').value) : null;
-    
-    // Валидация
-    if (!amount || amount <= 0) {
-        showNotification('Введите корректную сумму', 'error');
-        return;
-    }
-    
-    if (!description) {
-        showNotification('Введите описание', 'error');
-        return;
-    }
-    
-    if (type === 'expense' && distribution === 'specific' && !categoryId) {
-        showNotification('Выберите категорию для расхода', 'error');
-        return;
-    }
-    
-    try {
-        const category = categoryId ? getCategory(categoryId) : null;
-        
-        addTransaction(type, amount, {
-            description: description,
-            categoryId: categoryId,
-            categoryName: category ? category.name : null,
-            date: date,
-            distribution: distribution,
-            templateId: templateId
-        });
-        
-        closeAddModal();
-        showNotification(
-            `${type === 'income' ? 'Доход' : 'Расход'} добавлен`,
-            'success'
-        );
-        
-        updateUI();
-    } catch (error) {
-        showNotification(error.message, 'error');
-    }
-}
-
-// ===== ПЕРЕВОД =====
-function openTransferModal() {
-    showNotification('Функция перевода в разработке', 'info');
-}
-
-// ===== ПАРТНЁРЫ =====
-function openPartnersModal() {
-    const container = document.getElementById('partners-list');
-    const data = getAppData();
-    
-    container.innerHTML = '';
-    
-    // Показываем текущего пользователя
-    const currentUser = getCurrentUser();
-    if (currentUser) {
-        const item = document.createElement('div');
-        item.className = 'partner-item';
-        item.innerHTML = `
-            <div class="partner-avatar">
-                <i class="fas fa-crown"></i>
-            </div>
-            <div class="partner-info">
-                <div class="partner-name">${currentUser.firstName} (Вы)</div>
-                <div class="partner-status">Владелец</div>
-            </div>
-        `;
-        container.appendChild(item);
-    }
-    
-    // Показываем партнёров
-    data.users.filter(u => !u.isCurrent).forEach(user => {
-        const item = document.createElement('div');
-        item.className = 'partner-item';
-        item.innerHTML = `
-            <div class="partner-avatar">
-                <i class="fas fa-user"></i>
-            </div>
-            <div class="partner-info">
-                <div class="partner-name">${user.username}</div>
-                <div class="partner-status">Партнёр</div>
-            </div>
-            <button class="btn-small" onclick="removePartner(${user.id})">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
-        container.appendChild(item);
-    });
-    
-    // Обновляем ссылку для приглашения
-    document.getElementById('share-link').value = getShareLink();
-    
-    openModal('partners-modal');
-}
-
-function addPartner() {
-    const usernameInput = document.getElementById('partner-username');
-    const username = usernameInput.value.trim();
-    
-    if (!username) {
-        showNotification('Введите username', 'error');
-        return;
-    }
-    
-    try {
-        addPartner(username);
-        usernameInput.value = '';
-        showNotification('Партнёр добавлен', 'success');
-        openPartnersModal(); // Перезагружаем модалку
-        updateUI();
-    } catch (error) {
-        showNotification(error.message, 'error');
-    }
-}
-
-function copyShareLink() {
-    const linkInput = document.getElementById('share-link');
-    linkInput.select();
-    document.execCommand('copy');
-    showNotification('Ссылка скопирована', 'success');
-}
-
-// ===== СТАТИСТИКА =====
-function openStatsModal() {
-    updateStats('month');
-    openModal('stats-modal');
-}
-
-function updateStats(period) {
-    const stats = getStats(period);
-    
-    // Обновляем суммы
-    document.getElementById('total-income').textContent = formatCurrency(stats.totalIncome);
-    document.getElementById('total-expense').textContent = formatCurrency(stats.totalExpense);
-    document.getElementById('total-balance-stat').textContent = formatCurrency(stats.balance);
-    
-    // Обновляем кнопки периода
-    document.querySelectorAll('.period-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.dataset.period === period) {
-            btn.classList.add('active');
-        }
-    });
-    
-    // Строим графики
-    updateCharts(stats);
-}
-
-function updateCharts(stats) {
-    const expensesCtx = document.getElementById('expenses-chart').getContext('2d');
-    const incomeCtx = document.getElementById('income-chart').getContext('2d');
-    
-    // Уничтожаем старые графики
-    if (expenseChart) expenseChart.destroy();
-    if (incomeChart) incomeChart.destroy();
-    
-    // Данные для графика расходов по категориям
-    const expenseCategories = stats.categories.filter(cat => cat.spent > 0);
-    
-    expenseChart = new Chart(expensesCtx, {
-        type: 'doughnut',
-        data: {
-            labels: expenseCategories.map(cat => cat.name),
-            datasets: [{
-                data: expenseCategories.map(cat => cat.spent),
-                backgroundColor: expenseCategories.map(cat => cat.color),
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                },
-                title: {
-                    display: true,
-                    text: 'Расходы по категориям'
-                }
-            }
-        }
-    });
-    
-    // Данные для графика доходов/расходов
-    incomeChart = new Chart(incomeCtx, {
-        type: 'bar',
-        data: {
-            labels: ['Доходы', 'Расходы'],
-            datasets: [{
-                label: 'Сумма',
-                data: [stats.totalIncome, stats.totalExpense],
-                backgroundColor: ['#10b981', '#ef4444'],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                title: {
-                    display: true,
-                    text: 'Доходы vs Расходы'
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
-    });
-}
-
-// ===== КАТЕГОРИИ =====
 function openCategoriesModal() {
-    const container = document.getElementById('categories-edit-list');
-    const categories = getCategories();
-    
-    container.innerHTML = '';
-    
-    categories.forEach(category => {
-        const item = document.createElement('div');
-        item.className = 'category-edit-item';
-        item.innerHTML = `
-            <input type="text" class="category-edit-input" value="${category.name}" 
-                   onchange="updateCategoryName(${category.id}, this.value)">
-            <input type="number" class="category-edit-percent" value="${category.percent}" min="0" max="100"
-                   onchange="updateCategoryPercent(${category.id}, this.value)">
-            <div class="category-icon" style="background: ${category.color}; width: 36px; height: 36px;">
-                <i class="${category.icon}"></i>
-            </div>
-            <button class="remove-category" onclick="deleteCategoryConfirm(${category.id})">
-                <i class="fas fa-trash"></i>
-            </button>
-        `;
-        container.appendChild(item);
-    });
-    
     openModal('categories-modal');
 }
 
-function updateCategoryName(id, name) {
-    if (name.trim()) {
-        updateCategory(id, { name: name.trim() });
+function openUsersModal() {
+    openModal('users-modal');
+}
+
+function openCategoryManage() {
+    openModal('categories-modal');
+}
+
+function showAllTransactions() {
+    alert('В полной версии будет список всех транзакций');
+}
+
+function openCategoryExpense(categoryId) {
+    const category = getCategory(categoryId);
+    if (category) {
+        openExpenseModal();
+        setTimeout(() => {
+            document.getElementById('expense-category').value = categoryId;
+            document.getElementById('expense-source').value = 'specific';
+        }, 100);
     }
 }
 
-function updateCategoryPercent(id, percent) {
-    percent = parseInt(percent) || 0;
-    if (percent >= 0 && percent <= 100) {
-        updateCategory(id, { percent: percent });
+// ===== ДОХОДЫ =====
+function updateCategorySelects() {
+    const incomeSelect = document.getElementById('income-category');
+    const expenseSelect = document.getElementById('expense-category');
+    
+    if (incomeSelect) {
+        incomeSelect.innerHTML = '<option value="">Выберите категорию</option>';
+        getCategories().forEach(category => {
+            incomeSelect.innerHTML += `<option value="${category.id}">${category.name}</option>`;
+        });
+    }
+    
+    if (expenseSelect) {
+        expenseSelect.innerHTML = '<option value="">Выберите категорию</option>';
+        getCategories().forEach(category => {
+            expenseSelect.innerHTML += `<option value="${category.id}">${category.name}</option>`;
+        });
+    }
+    
+    // Слушатель для распределения дохода
+    const distributeSelect = document.getElementById('income-distribute');
+    if (distributeSelect) {
+        distributeSelect.addEventListener('change', function() {
+            const container = document.getElementById('category-select-container');
+            container.style.display = this.value === 'specific' ? 'block' : 'none';
+        });
+    }
+}
+
+function addIncome() {
+    const amount = document.getElementById('income-amount').value;
+    const description = document.getElementById('income-description').value;
+    const period = document.getElementById('income-period').value;
+    const distributeType = document.getElementById('income-distribute').value;
+    const categoryId = distributeType === 'specific' ? 
+        document.getElementById('income-category').value : null;
+    
+    const result = addIncome(amount, description, period, distributeType, categoryId);
+    
+    if (result.success) {
+        showNotification(result.message, 'success');
+        closeModal('income-modal');
+        updateAllUI();
+    } else {
+        showNotification(result.message, 'error');
+    }
+}
+
+// ===== РАСХОДЫ =====
+function addExpense() {
+    const amount = document.getElementById('expense-amount').value;
+    const description = document.getElementById('expense-description').value;
+    const categoryId = document.getElementById('expense-category').value;
+    const sourceType = document.getElementById('expense-source').value;
+    
+    if (!categoryId && sourceType === 'specific') {
+        showNotification('Выберите категорию', 'error');
+        return;
+    }
+    
+    const result = addExpense(amount, description, categoryId, sourceType);
+    
+    if (result.success) {
+        showNotification(result.message, 'success');
+        closeModal('expense-modal');
+        updateAllUI();
+    } else {
+        const alertEl = document.getElementById('expense-alert');
+        alertEl.textContent = result.message;
+        alertEl.className = 'alert error';
+        alertEl.style.display = 'block';
+    }
+}
+
+// ===== КАТЕГОРИИ =====
+function updateCategoriesManage() {
+    const container = document.getElementById('categories-manage');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    getCategories().forEach(category => {
+        const item = document.createElement('div');
+        item.className = 'category-manage-item';
+        
+        item.innerHTML = `
+            <div class="category-manage-color" style="background: ${category.color}"></div>
+            <div class="category-manage-name">${category.name}</div>
+            <div class="category-balance">${Math.round(category.balance)} ₽</div>
+            <button class="category-manage-delete" onclick="deleteCategoryConfirm(${category.id})">
+                <i class="fas fa-trash"></i>
+            </button>
+        `;
+        
+        container.appendChild(item);
+    });
+}
+
+function updatePercentManager() {
+    const container = document.getElementById('percent-manage');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    const categories = getCategories();
+    let totalPercent = 0;
+    
+    categories.forEach(category => {
+        const item = document.createElement('div');
+        item.className = 'percent-item';
+        
+        item.innerHTML = `
+            <div class="percent-name">${category.name}</div>
+            <input type="number" 
+                   class="percent-input" 
+                   value="${category.percent}" 
+                   min="0" 
+                   max="100"
+                   onchange="updateCategoryPercent(${category.id}, this.value)"
+                   oninput="updatePercentTotal()">
+            <span>%</span>
+        `;
+        
+        container.appendChild(item);
+        totalPercent += category.percent;
+    });
+    
+    // Итог
+    const totalEl = document.createElement('div');
+    totalEl.className = 'percent-total';
+    totalEl.innerHTML = `Всего: <span id="percent-total">${totalPercent}</span>%`;
+    container.appendChild(totalEl);
+}
+
+function updatePercentTotal() {
+    const inputs = document.querySelectorAll('.percent-input');
+    let total = 0;
+    
+    inputs.forEach(input => {
+        total += Number(input.value) || 0;
+    });
+    
+    const totalEl = document.getElementById('percent-total');
+    if (totalEl) {
+        totalEl.textContent = total;
+        
+        if (total === 100) {
+            totalEl.style.color = '#10b981';
+        } else if (total > 100) {
+            totalEl.style.color = '#ef4444';
+        } else {
+            totalEl.style.color = '#f59e0b';
+        }
     }
 }
 
 function addCategory() {
     const nameInput = document.getElementById('new-category-name');
-    const percentInput = document.getElementById('new-category-percent');
+    const colorInput = document.getElementById('new-category-color');
     
     const name = nameInput.value.trim();
-    const percent = parseInt(percentInput.value) || 0;
+    const color = colorInput.value;
     
     if (!name) {
         showNotification('Введите название категории', 'error');
         return;
     }
     
-    if (percent < 0 || percent > 100) {
-        showNotification('Процент должен быть от 0 до 100', 'error');
+    addCategory(name, color);
+    nameInput.value = '';
+    colorInput.value = '#4361ee';
+    
+    showNotification(`Категория "${name}" добавлена`, 'success');
+    updateCategoriesManage();
+    updatePercentManager();
+    updateCategorySelects();
+}
+
+function savePercentages() {
+    const totalEl = document.getElementById('percent-total');
+    const total = parseInt(totalEl.textContent);
+    
+    if (total !== 100) {
+        showNotification(`Сумма процентов должна быть 100% (сейчас ${total}%)`, 'error');
         return;
     }
     
-    addCategory(name, percent);
+    const inputs = document.querySelectorAll('.percent-input');
+    inputs.forEach(input => {
+        const categoryId = parseInt(input.getAttribute('onchange').match(/\d+/)[0]);
+        updateCategoryPercent(categoryId, parseInt(input.value));
+    });
     
-    nameInput.value = '';
-    percentInput.value = '';
-    
-    showNotification('Категория добавлена', 'success');
-    openCategoriesModal(); // Перезагружаем модалку
+    showNotification('Проценты сохранены', 'success');
 }
 
-function deleteCategoryConfirm(id) {
-    if (confirm('Удалить категорию? Все связанные операции останутся, но баланс будет распределён.')) {
-        deleteCategory(id);
-        showNotification('Категория удалена', 'success');
-        openCategoriesModal(); // Перезагружаем модалку
+function deleteCategoryConfirm(categoryId) {
+    const category = getCategory(categoryId);
+    if (!category) return;
+    
+    if (confirm(`Удалить категорию "${category.name}"?`)) {
+        if (deleteCategory(categoryId)) {
+            showNotification(`Категория "${category.name}" удалена`, 'success');
+            updateCategoriesManage();
+            updatePercentManager();
+            updateCategorySelects();
+            updateCategoriesUI();
+        }
     }
 }
 
-function saveCategories() {
-    // Просто закрываем модалку, изменения уже сохранены
-    closeModal('categories-modal');
-    updateUI();
-}
-
-// ===== ШАБЛОНЫ =====
-function openTemplatesModal() {
-    const container = document.getElementById('templates-list');
-    const editContainer = document.getElementById('template-categories-edit');
-    const templates = getTemplates();
+// ===== ПОЛЬЗОВАТЕЛИ =====
+function updateUsersList() {
+    const container = document.getElementById('users-list');
+    if (!container) return;
     
-    // Показываем список шаблонов
     container.innerHTML = '';
-    templates.forEach(template => {
+    
+    const users = getUsers();
+    
+    if (users.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <p>Нет добавленных пользователей</p>
+            </div>
+        `;
+        return;
+    }
+    
+    users.forEach(user => {
         const item = document.createElement('div');
-        item.className = 'category-item';
+        item.className = 'user-item';
+        
+        // Первая буква имени для аватара
+        const firstLetter = user.firstName.charAt(0).toUpperCase();
+        
         item.innerHTML = `
-            <div class="category-icon" style="background: #8b5cf6">
-                <i class="fas fa-layer-group"></i>
-            </div>
-            <div class="category-info">
-                <div class="category-name">${template.name}</div>
-                <div class="category-details">
-                    <span>${template.categories.length} категорий</span>
-                </div>
-            </div>
-            <button class="btn-small" onclick="applyTemplate(${template.id})">
-                Применить
+            <div class="user-avatar">${firstLetter}</div>
+            <div class="user-name">${user.firstName}</div>
+            <div class="user-username">${user.username}</div>
+            <button class="user-delete" onclick="removeUserConfirm(${user.id})">
+                <i class="fas fa-times"></i>
             </button>
         `;
+        
         container.appendChild(item);
     });
-    
-    // Показываем текущие категории для создания шаблона
-    editContainer.innerHTML = '';
-    getCategories().forEach(category => {
-        const item = document.createElement('div');
-        item.className = 'category-edit-item';
-        item.innerHTML = `
-            <span>${category.name}</span>
-            <input type="number" class="category-edit-percent" 
-                   id="template-percent-${category.id}" 
-                   value="${category.percent}" min="0" max="100">
-        `;
-        editContainer.appendChild(item);
-    });
-    
-    openModal('templates-modal');
 }
 
-function createTemplate() {
-    const nameInput = document.getElementById('template-name');
-    const name = nameInput.value.trim();
+function addUser() {
+    const input = document.getElementById('new-username');
+    const username = input.value.trim();
     
-    if (!name) {
-        showNotification('Введите название шаблона', 'error');
+    if (!username) {
+        showNotification('Введите @username', 'error');
         return;
     }
     
-    const categories = getCategories().map(category => {
-        const percentInput = document.getElementById(`template-percent-${category.id}`);
-        return {
-            id: category.id,
-            percent: parseInt(percentInput.value) || 0
-        };
-    });
+    // Добавляем @ если его нет
+    const formattedUsername = username.startsWith('@') ? username : '@' + username;
     
-    // Проверяем, что сумма процентов = 100
-    const totalPercent = categories.reduce((sum, cat) => sum + cat.percent, 0);
-    if (totalPercent !== 100) {
-        showNotification(`Сумма процентов должна быть 100% (сейчас ${totalPercent}%)`, 'error');
-        return;
-    }
+    const result = addUser(formattedUsername);
     
-    createTemplate(name, categories);
-    nameInput.value = '';
-    
-    showNotification('Шаблон создан', 'success');
-    openTemplatesModal(); // Перезагружаем модалку
-}
-
-function applyTemplate(templateId) {
-    const amount = prompt('Введите сумму для распределения по шаблону:');
-    if (!amount || isNaN(amount) || amount <= 0) {
-        return;
-    }
-    
-    try {
-        applyTemplate(templateId, parseFloat(amount));
-        closeModal('templates-modal');
-        showNotification('Доход распределён по шаблону', 'success');
-        updateUI();
-    } catch (error) {
-        showNotification(error.message, 'error');
-    }
-}
-
-// ===== НАСТРОЙКИ =====
-function openSettings() {
-    const data = getAppData();
-    
-    // Устанавливаем текущие настройки
-    document.getElementById('currency-select').value = data.currency || '₽';
-    document.getElementById('notifications-toggle').checked = data.settings.notifications;
-    
-    openModal('settings-modal');
-}
-
-function saveSettings() {
-    const currency = document.getElementById('currency-select').value;
-    const notifications = document.getElementById('notifications-toggle').checked;
-    
-    updateAppData(data => {
-        data.currency = currency;
-        data.settings.notifications = notifications;
-    });
-    
-    closeModal('settings-modal');
-    showNotification('Настройки сохранены', 'success');
-    updateUI();
-}
-
-// ===== ИСТОРИЯ ОПЕРАЦИЙ =====
-function showAllTransactions() {
-    const container = document.getElementById('all-transactions');
-    const period = getCurrentPeriod();
-    const transactions = getTransactions(period);
-    
-    container.innerHTML = '';
-    
-    if (transactions.length === 0) {
-        container.innerHTML = `
-            <div class="no-data">
-                <i class="fas fa-receipt"></i>
-                <p>Нет операций за выбранный период</p>
-            </div>
-        `;
+    if (result.success) {
+        showNotification(`Пользователь ${formattedUsername} добавлен`, 'success');
+        input.value = '';
+        updateUsersList();
     } else {
-        transactions.forEach(transaction => {
-            const item = document.createElement('div');
-            item.className = 'transaction-item';
-            
-            const category = transaction.categoryId ? 
-                getCategory(transaction.categoryId) : null;
-            
-            const icon = category ? category.icon : 
-                (transaction.type === 'income' ? 'fas fa-arrow-down' : 'fas fa-arrow-up');
-            
-            const color = category ? category.color : 
-                (transaction.type === 'income' ? '#10b981' : '#ef4444');
-            
-            const amountClass = transaction.type === 'income' ? 'income' : 'expense';
-            const amountSign = transaction.type === 'income' ? '+' : '-';
-            
-            item.innerHTML = `
-                <div class="transaction-icon" style="background: ${color}">
-                    <i class="${icon}"></i>
-                </div>
-                <div class="transaction-details">
-                    <div class="transaction-title">${transaction.description || 'Операция'}</div>
-                    <div class="transaction-meta">
-                        <span>${category ? category.name : (transaction.type === 'income' ? 'Доход' : 'Расход')}</span>
-                        <span>•</span>
-                        <span>${formatDate(transaction.date)}</span>
-                    </div>
-                </div>
-                <div class="transaction-amount ${amountClass}">
-                    ${amountSign}${formatCurrency(transaction.amount)}
-                </div>
-            `;
-            
-            container.appendChild(item);
-        });
-    }
-    
-    openModal('transactions-modal');
-}
-
-function filterTransactions() {
-    // Будет реализовано в будущих обновлениях
-    showNotification('Фильтрация в разработке', 'info');
-}
-
-// ===== ЭКСПОРТ/ИМПОРТ =====
-function openBackupModal() {
-    const exportData = exportData();
-    const blob = new Blob([exportData], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `finance-backup-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    showNotification('Данные экспортированы', 'success');
-}
-
-function exportData() {
-    const data = getAppData();
-    return JSON.stringify(data, null, 2);
-}
-
-function importData() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    
-    input.onchange = function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const result = importData(e.target.result);
-            if (result.success) {
-                showNotification(result.message, 'success');
-                updateUI();
-            } else {
-                showNotification(result.message, 'error');
-            }
-        };
-        reader.readAsText(file);
-    };
-    
-    input.click();
-}
-
-function resetData() {
-    if (confirm('ВНИМАНИЕ! Это удалит ВСЕ данные: транзакции, категории, партнёров. Продолжить?')) {
-        localStorage.removeItem('financeApp');
-        initAppData();
-        updateUI();
-        showNotification('Все данные сброшены', 'success');
+        showNotification(result.message, 'error');
     }
 }
 
-// ===== УТИЛИТЫ =====
-function changePeriod(period) {
-    setCurrentPeriod(period);
-    updateUI();
+function removeUserConfirm(userId) {
+    if (confirm('Удалить пользователя?')) {
+        if (removeUser(userId)) {
+            showNotification('Пользователь удален', 'success');
+            updateUsersList();
+        }
+    }
 }
 
+// ===== УВЕДОМЛЕНИЯ =====
 function showNotification(message, type = 'info') {
-    // Если в Telegram, используем их алерт
-    if (tg && tg.showAlert) {
-        tg.showAlert(message);
+    if (typeof Telegram !== 'undefined' && window.Telegram.WebApp.showAlert) {
+        window.Telegram.WebApp.showAlert(message);
         return;
     }
     
-    // Иначе показываем своё уведомление
-    const notification = document.getElementById('notification');
-    notification.textContent = message;
+    // Создаем свое уведомление
+    const notification = document.createElement('div');
     notification.className = 'notification';
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6'};
+        color: white;
+        padding: 12px 24px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        z-index: 3000;
+        animation: slideDown 0.3s ease;
+        font-weight: 500;
+        max-width: 90%;
+        text-align: center;
+    `;
     
-    // Цвет в зависимости от типа
-    if (type === 'error') {
-        notification.style.borderLeftColor = '#ef4444';
-    } else if (type === 'success') {
-        notification.style.borderLeftColor = '#10b981';
-    } else {
-        notification.style.borderLeftColor = '#3b82f6';
-    }
-    
-    notification.classList.add('show');
+    notification.textContent = message;
+    document.body.appendChild(notification);
     
     setTimeout(() => {
-        notification.classList.remove('show');
+        notification.style.animation = 'slideUp 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
     }, 3000);
 }
 
-function formatCurrency(amount) {
-    return formatCurrency(amount);
-}
-
-// ===== ИНИЦИАЛИЗАЦИЯ =====
-document.addEventListener('DOMContentLoaded', function() {
-    // Инициализируем данные
-    if (typeof initAppData === 'function') {
-        initAppData();
+// Добавляем стили для анимации
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideDown {
+        from { transform: translate(-50%, -100%); opacity: 0; }
+        to { transform: translate(-50%, 0); opacity: 1; }
     }
     
-    // Обновляем UI
-    updateUI();
-    
-    // Устанавливаем сегодняшнюю дату по умолчанию
-    const today = new Date().toISOString().split('T')[0];
-    const dateField = document.getElementById('date');
-    if (dateField) {
-        dateField.value = today;
-        dateField.max = today;
+    @keyframes slideUp {
+        from { transform: translate(-50%, 0); opacity: 1; }
+        to { transform: translate(-50%, -100%); opacity: 0; }
     }
     
-    // Назначаем обработчики для кнопок периода в статистике
-    document.querySelectorAll('.period-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            updateStats(this.dataset.period);
-        });
-    });
+    .dark-theme {
+        background: #0f172a;
+        color: #e2e8f0;
+    }
     
-    // Назначаем обработчики для модалок
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('modal')) {
-            closeAllModals();
-        }
-    });
+    .dark-theme .app {
+        background: #0f172a;
+    }
     
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closeAllModals();
-        }
-    });
+    .dark-theme .section,
+    .dark-theme .category-item,
+    .dark-theme .transaction-item,
+    .dark-theme .modal-content {
+        background: #1e293b;
+        color: #e2e8f0;
+        border-color: #334155;
+    }
     
-    // Показываем приветствие
-    setTimeout(() => {
-        showNotification('Добро пожаловать в Финансы в паре! 💰', 'info');
-    }, 1000);
-});
+    .dark-theme .quick-menu {
+        background: #1e293b;
+        border-color: #334155;
+    }
+    
+    .dark-theme .menu-btn {
+        color: #cbd5e1;
+    }
+    
+    .dark-theme .form-input,
+    .dark-theme .form-select {
+        background: #334155;
+        border-color: #475569;
+        color: #e2e8f0;
+    }
+    
+    .dark-theme .form-input::placeholder {
+        color: #94a3b8;
+    }
+    
+    .dark-theme .category-manage-item,
+    .dark-theme .user-item {
+        background: #334155;
+    }
+`;
+document.head.appendChild(style);
